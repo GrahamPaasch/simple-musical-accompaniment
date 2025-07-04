@@ -103,10 +103,8 @@ class MusicalAccompanist {
             this.showStatus(`Tuning mode: ${this.tuningMode === 'equal' ? 'Equal Temperament' : 'Just Intonation'}`);
         });
 
-        document.getElementById('key-select').addEventListener('change', (e) => {
-            this.currentKey = e.target.value;
-            this.showStatus(`Key set to: ${this.currentKey}`);
-        });
+        // Circle of Fifths key selection
+        this.setupCircleOfFifths();
 
         document.getElementById('time-signature').addEventListener('change', (e) => {
             this.timeSignature = parseInt(e.target.value);
@@ -404,7 +402,156 @@ class MusicalAccompanist {
         // Update UI
         document.getElementById('tempo').value = this.tempo;
         document.getElementById('tempo-display').textContent = this.tempo;
-        document.getElementById('key-select').value = this.currentKey;
+        this.updateCircleOfFifthsSelection();
+        
+        this.displayChords();
+        this.showStatus(`Loaded preset: ${preset.name}`);
+    }
+
+    /**
+     * Get preset data without loading it
+     */
+    getPresetData(presetName) {
+        const presets = {
+            'drone-a': {
+                name: 'Drone: A (440Hz)',
+                chords: [{ name: 'A', notes: ['A4'], duration: '1n', isDrone: true, isSingleNote: true }],
+                tempo: 60,
+                key: 'A'
+            },
+            'single-note-c': {
+                name: 'Single Note: C',
+                chords: [{ name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true }],
+                tempo: 120,
+                key: 'C'
+            },
+            'chromatic-scale': {
+                name: 'Chromatic Scale',
+                chords: [
+                    { name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true },
+                    { name: 'C#', notes: ['C#4'], duration: '1n', isSingleNote: true },
+                    { name: 'D', notes: ['D4'], duration: '1n', isSingleNote: true },
+                    { name: 'D#', notes: ['D#4'], duration: '1n', isSingleNote: true },
+                    { name: 'E', notes: ['E4'], duration: '1n', isSingleNote: true },
+                    { name: 'F', notes: ['F4'], duration: '1n', isSingleNote: true },
+                    { name: 'F#', notes: ['F#4'], duration: '1n', isSingleNote: true },
+                    { name: 'G', notes: ['G4'], duration: '1n', isSingleNote: true },
+                    { name: 'G#', notes: ['G#4'], duration: '1n', isSingleNote: true },
+                    { name: 'A', notes: ['A4'], duration: '1n', isSingleNote: true },
+                    { name: 'A#', notes: ['A#4'], duration: '1n', isSingleNote: true },
+                    { name: 'B', notes: ['B4'], duration: '1n', isSingleNote: true },
+                    { name: 'C5', notes: ['C5'], duration: '1n', isSingleNote: true }
+                ],
+                tempo: 80,
+                key: 'C'
+            },
+            'g-major-145': {
+                name: 'G Major I-IV-V',
+                chords: [
+                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' },
+                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'D', notes: ['D4', 'F#4', 'A4'], duration: '1n' },
+                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' }
+                ],
+                tempo: 100,
+                key: 'G'
+            },
+            'c-major-1645': {
+                name: 'C Major I-vi-IV-V',
+                chords: [
+                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'Am', notes: ['A3', 'C4', 'E4'], duration: '1n' },
+                    { name: 'F', notes: ['F3', 'A3', 'C4'], duration: '1n' },
+                    { name: 'G', notes: ['G3', 'B3', 'D4'], duration: '1n' }
+                ],
+                tempo: 120,
+                key: 'C'
+            },
+            'd-major-drone': {
+                name: 'D Major Drone',
+                chords: [{ name: 'D', notes: ['D4', 'A4'], duration: '1n', isDrone: true }],
+                tempo: 60,
+                key: 'D'
+            },
+            'blues-12bar': {
+                name: '12-Bar Blues in A',
+                chords: [
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
+                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' },
+                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' }
+                ],
+                tempo: 120,
+                key: 'A'
+            },
+            'roman-145': {
+                name: 'Roman: I-IV-V',
+                chords: [
+                    { name: 'I', notes: ['C4', 'E4', 'G4'], duration: '1n', isRomanNumeral: true, scaleDegree: 1 },
+                    { name: 'IV', notes: ['F4', 'A4', 'C5'], duration: '1n', isRomanNumeral: true, scaleDegree: 4 },
+                    { name: 'V', notes: ['G4', 'B4', 'D5'], duration: '1n', isRomanNumeral: true, scaleDegree: 5 },
+                    { name: 'I', notes: ['C4', 'E4', 'G4'], duration: '1n', isRomanNumeral: true, scaleDegree: 1 }
+                ],
+                tempo: 120,
+                key: 'C'
+            },
+            'roman-1645': {
+                name: 'Roman: I-vi-IV-V',
+                chords: [
+                    { name: 'I', notes: ['C4', 'E4', 'G4'], duration: '1n', isRomanNumeral: true, scaleDegree: 1 },
+                    { name: 'vi', notes: ['A4', 'C5', 'E5'], duration: '1n', isRomanNumeral: true, scaleDegree: 6 },
+                    { name: 'IV', notes: ['F4', 'A4', 'C5'], duration: '1n', isRomanNumeral: true, scaleDegree: 4 },
+                    { name: 'V', notes: ['G4', 'B4', 'D5'], duration: '1n', isRomanNumeral: true, scaleDegree: 5 }
+                ],
+                tempo: 120,
+                key: 'C'
+            },
+            'roman-circle': {
+                name: 'Roman: vi-IV-I-V (Circle)',
+                chords: [
+                    { name: 'vi', notes: ['A4', 'C5', 'E5'], duration: '1n', isRomanNumeral: true, scaleDegree: 6 },
+                    { name: 'IV', notes: ['F4', 'A4', 'C5'], duration: '1n', isRomanNumeral: true, scaleDegree: 4 },
+                    { name: 'I', notes: ['C4', 'E4', 'G4'], duration: '1n', isRomanNumeral: true, scaleDegree: 1 },
+                    { name: 'V', notes: ['G4', 'B4', 'D5'], duration: '1n', isRomanNumeral: true, scaleDegree: 5 }
+                ],
+                tempo: 120,
+                key: 'C'
+            },
+            'number-145': {
+                name: 'Numbers: 1-4-5',
+                chords: [
+                    { name: '1', notes: ['C4', 'E4', 'G4'], duration: '1n', isRomanNumeral: true, scaleDegree: 1 },
+                    { name: '4', notes: ['F4', 'A4', 'C5'], duration: '1n', isRomanNumeral: true, scaleDegree: 4 },
+                    { name: '5', notes: ['G4', 'B4', 'D5'], duration: '1n', isRomanNumeral: true, scaleDegree: 5 },
+                    { name: '1', notes: ['C4', 'E4', 'G4'], duration: '1n', isRomanNumeral: true, scaleDegree: 1 }
+                ],
+                tempo: 120,
+                key: 'C'
+            }
+        };
+
+        const preset = presets[presetName];
+        if (!preset) {
+            this.showStatus('Preset not found');
+            return;
+        }
+
+        this.chordProgression = preset.chords;
+        this.currentKey = preset.key;
+        this.tempo = preset.tempo;
+        
+        // Update UI
+        document.getElementById('tempo').value = this.tempo;
+        document.getElementById('tempo-display').textContent = this.tempo;
+        this.updateCircleOfFifthsSelection();
         
         this.displayChords();
         this.showStatus(`Loaded preset: ${preset.name}`);
@@ -2500,6 +2647,86 @@ class MusicalAccompanist {
         this.displayChords();
         this.showStatus(`Inserted ${chord.name} at position ${adjustedIndex + 1}`);
     }
+
+    /**
+     * Setup Circle of Fifths interface for key selection
+     */
+    setupCircleOfFifths() {
+        const keySegments = document.querySelectorAll('.key-segment');
+        const selectedKeyDisplay = document.getElementById('selected-key-display');
+        
+        keySegments.forEach(segment => {
+            segment.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                const selectedKey = segment.dataset.key;
+                
+                // Remove previous selection
+                keySegments.forEach(s => s.classList.remove('selected'));
+                
+                // Add selection to clicked segment
+                segment.classList.add('selected');
+                
+                // Update the key
+                this.currentKey = selectedKey;
+                
+                // Update center display
+                if (selectedKeyDisplay) {
+                    selectedKeyDisplay.textContent = selectedKey;
+                }
+                
+                // Show status
+                const isMinor = selectedKey.includes('m');
+                const keyType = isMinor ? 'Minor' : 'Major';
+                this.showStatus(`Key set to: ${selectedKey} ${keyType}`);
+                
+                // Update any existing progression analysis
+                if (this.showChordAnalysis) {
+                    this.analyzeProgression();
+                }
+            });
+            
+            // Add hover effects
+            segment.addEventListener('mouseenter', () => {
+                if (!segment.classList.contains('selected')) {
+                    segment.style.opacity = '0.8';
+                }
+            });
+            
+            segment.addEventListener('mouseleave', () => {
+                if (!segment.classList.contains('selected')) {
+                    segment.style.opacity = '1';
+                }
+            });
+        });
+        
+        // Set initial selection to current key (C Major by default)
+        this.updateCircleOfFifthsSelection();
+    }
+
+    /**
+     * Update the Circle of Fifths to show the current key selection
+     */
+    updateCircleOfFifthsSelection() {
+        const keySegments = document.querySelectorAll('.key-segment');
+        const selectedKeyDisplay = document.getElementById('selected-key-display');
+        
+        // Remove all selections
+        keySegments.forEach(segment => segment.classList.remove('selected'));
+        
+        // Find and select the current key
+        const currentSegment = document.querySelector(`.key-segment[data-key="${this.currentKey}"]`);
+        if (currentSegment) {
+            currentSegment.classList.add('selected');
+        }
+        
+        // Update center display
+        if (selectedKeyDisplay) {
+            selectedKeyDisplay.textContent = this.currentKey;
+        }
+    }
+
+    // ...existing code...
 }
 
 // Initialize the application when the page loads

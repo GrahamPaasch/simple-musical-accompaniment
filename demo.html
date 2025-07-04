@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Accompanist Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .demo-card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .demo-card h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .demo-card p {
+            line-height: 1.6;
+            color: #666;
+        }
+        .demo-card code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .launch-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 20px 0;
+            transition: transform 0.3s ease;
+        }
+        .launch-button:hover {
+            transform: translateY(-2px);
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .feature-item h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .feature-item p {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-card">
+        <h1>🎵 Musical Accompanist Tool Demo</h1>
+        <p>Welcome to the Musical Accompanist Tool! This web application helps musicians practice with customizable chord progressions, drones, and precise timing control.</p>
+        
+        <a href="index.html" class="launch-button">🚀 Launch Application</a>
+        
+        <h2>Quick Demo Guide</h2>
+        <p>Here are some suggested ways to explore the application:</p>
+        
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h3>🎹 Try the Presets</h3>
+                <p>Click on preset buttons to instantly load common progressions and drones</p>
+            </div>
+            <div class="feature-item">
+                <h3>🎼 Custom Chords</h3>
+                <p>Enter your own progressions like <code>C Am F G</code> or use <code>-</code> for rests</p>
+            </div>
+            <div class="feature-item">
+                <h3>🎹 Piano Keyboard</h3>
+                <p>Click the visual piano keys to build custom chords and add them to your progression</p>
+            </div>
+            <div class="feature-item">
+                <h3>🎵 Interactive Chords</h3>
+                <p>Click any chord in your progression to preview how it sounds</p>
+            </div>
+            <div class="feature-item">
+                <h3>🎛️ Adjust Settings</h3>
+                <p>Change tempo, volume, and toggle between tuning systems</p>
+            </div>
+            <div class="feature-item">
+                <h3>🎵 Compare Tunings</h3>
+                <p>Switch between Equal Temperament and Just Intonation to hear the difference</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="demo-card">
+        <h2>🎯 Suggested Demo Scenarios</h2>
+        
+        <h3>1. Scale Practice with Drone</h3>
+        <p>1. Click the <strong>"Drone: A (440Hz)"</strong> preset</p>
+        <p>2. Click <strong>Play</strong> to hear a continuous A tone</p>
+        <p>3. Practice A major or A minor scales against this drone</p>
+        
+        <h3>2. Chord Progression Practice</h3>
+        <p>1. Click the <strong>"C Major I-vi-IV-V"</strong> preset</p>
+        <p>2. Adjust tempo to your comfort level (try 80-120 BPM)</p>
+        <p>3. Enable <strong>Loop Mode</strong> and click <strong>Play</strong></p>
+        <p>4. Practice playing along with the chords</p>
+        
+        <h3>3. Custom Progression</h3>
+        <p>1. In the text area, enter: <code>D | A | G | D</code></p>
+        <p>2. Click <strong>"Parse Chords"</strong></p>
+        <p>3. Set tempo to 100 BPM</p>
+        <p>4. Try both tuning modes to hear the difference</p>
+        
+        <h3>4. Blues Practice</h3>
+        <p>1. Click the <strong>"12-Bar Blues in A"</strong> preset</p>
+        <p>2. Enable <strong>Metronome Click</strong> for rhythm reference</p>
+        <p>3. Practice improvising over the 12-bar form</p>
+        
+        <h3>5. Build Custom Chords</h3>
+        <p>1. Scroll down to the <strong>Piano Keyboard</strong> section</p>
+        <p>2. Click on piano keys to select notes (try C, E, G for a C major chord)</p>
+        <p>3. Click <strong>"Play Selected"</strong> to hear your chord</p>
+        <p>4. Click <strong>"Add to Progression"</strong> to add it to your sequence</p>
+        
+        <h3>6. Interactive Chord Preview</h3>
+        <p>1. Load any preset or create a custom progression</p>
+        <p>2. Click on any chord in the <strong>"Current Progression"</strong> section</p>
+        <p>3. Hear the chord instantly without starting full playback</p>
+    </div>
+    
+    <div class="demo-card">
+        <h2>🎼 Chord Input Examples</h2>
+        <p>Try these chord progressions in the custom input:</p>
+        
+        <h3>Pop/Rock Progressions</h3>
+        <p><code>C G Am F</code> - "VI-IV-I-V" progression</p>
+        <p><code>Am F C G</code> - "vi-IV-I-V" progression</p>
+        <p><code>D A Bm G</code> - Same progression in D major</p>
+        <p><code>C - F G</code> - With rest on beat 2</p>
+        
+        <h3>Jazz/Classical</h3>
+        <p><code>C Am F G7</code> - With dominant 7th</p>
+        <p><code>Dm G7 C</code> - ii-V-I progression</p>
+        <p><code>C | Am | - | G7</code> - With bar lines and rest</p>
+        
+        <h3>Folk/Country</h3>
+        <p><code>G C D G</code> - I-IV-V-I progression</p>
+        <p><code>C F G7 C</code> - Classic folk progression</p>
+        
+        <h3>Using Flats and Sharps</h3>
+        <p><code>Bb F C Dm</code> - Progression with flats</p>
+        <p><code>C# G# A# F#</code> - Sharp progression</p>
+        <p><code>Db Ab Bb Fm</code> - Mixed flats and minors</p>
+    </div>
+    
+    <div class="demo-card">
+        <h2>🎧 Audio Tips</h2>
+        <ul>
+            <li>Use headphones for best audio quality</li>
+            <li>Ensure your browser allows audio playback</li>
+            <li>Click anywhere on the page first to enable audio context</li>
+            <li>Adjust your system volume before starting</li>
+            <li>Try different browsers if you experience issues</li>
+        </ul>
+    </div>
+    
+    <div class="demo-card">
+        <h2>🔧 Technical Features</h2>
+        <ul>
+            <li><strong>Web Audio API:</strong> High-quality audio synthesis</li>
+            <li><strong>Tone.js:</strong> Professional audio scheduling</li>
+            <li><strong>Just Intonation:</strong> Pure harmonic ratios</li>
+            <li><strong>Responsive Design:</strong> Works on all devices</li>
+            <li><strong>Offline Capable:</strong> No internet required after loading</li>
+        </ul>
+    </div>
+    
+    <div class="demo-card">
+        <h2>🎓 Educational Value</h2>
+        <p>This tool is perfect for:</p>
+        <ul>
+            <li><strong>Music Students:</strong> Practice chord progressions and scales</li>
+            <li><strong>Singers:</strong> Find pitch reference and practice harmony</li>
+            <li><strong>Instrumentalists:</strong> Play along with accompaniment</li>
+            <li><strong>Composers:</strong> Test chord progressions quickly</li>
+            <li><strong>Educators:</strong> Demonstrate tuning systems and harmony</li>
+        </ul>
+    </div>
+    
+    <div style="text-align: center; margin: 40px 0;">
+        <a href="index.html" class="launch-button">🚀 Launch Musical Accompanist Tool</a>
+    </div>
+</body>
+</html>

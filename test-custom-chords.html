@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Chord Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .test-input {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .test-result {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .test-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .run-tests {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+        .run-tests:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h1>🎵 Custom Chord Parsing Tests</h1>
+        <p>Testing the new note-dash-note syntax for custom chords.</p>
+        
+        <button class="run-tests" onclick="runCustomChordTests()">Run Custom Chord Tests</button>
+        
+        <div id="test-results"></div>
+    </div>
+    
+    <script>
+        // Copy the relevant parsing methods from the main script
+        function standardizeNoteName(noteName) {
+            let cleanNote = noteName.trim();
+            cleanNote = cleanNote.charAt(0).toUpperCase() + cleanNote.slice(1).toLowerCase();
+            
+            const noteMap = {
+                'C': 'C4', 'C#': 'C#4', 'Db': 'Db4', 'C♯': 'C#4', 'D♭': 'Db4',
+                'D': 'D4', 'D#': 'D#4', 'Eb': 'Eb4', 'D♯': 'D#4', 'E♭': 'Eb4',
+                'E': 'E4', 'E#': 'F4', 'Fb': 'E4', 'E♯': 'F4', 'F♭': 'E4',
+                'F': 'F4', 'F#': 'F#4', 'Gb': 'Gb4', 'F♯': 'F#4', 'G♭': 'Gb4',
+                'G': 'G4', 'G#': 'G#4', 'Ab': 'Ab4', 'G♯': 'G#4', 'A♭': 'Ab4',
+                'A': 'A4', 'A#': 'A#4', 'Bb': 'Bb4', 'A♯': 'A#4', 'B♭': 'Bb4',
+                'B': 'B4', 'B#': 'C5', 'Cb': 'B4', 'B♯': 'C5', 'C♭': 'B4'
+            };
+            
+            if (/[0-9]$/.test(cleanNote)) {
+                const notePart = cleanNote.slice(0, -1);
+                const octave = parseInt(cleanNote.slice(-1));
+                
+                if (octave >= 0 && octave <= 8) {
+                    if (isValidNoteName(notePart)) {
+                        return cleanNote;
+                    }
+                }
+                return null;
+            }
+            
+            if (noteMap[cleanNote]) {
+                return noteMap[cleanNote];
+            }
+            
+            return null;
+        }
+
+        function isValidNoteName(noteName) {
+            const validNotes = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+            return validNotes.includes(noteName);
+        }
+
+        function parseCustomChord(chordName) {
+            const noteNames = chordName.split('-').map(note => note.trim());
+            
+            const validNotes = [];
+            for (const noteName of noteNames) {
+                if (!noteName) continue;
+                
+                const standardizedNote = standardizeNoteName(noteName);
+                if (standardizedNote) {
+                    validNotes.push(standardizedNote);
+                } else {
+                    console.warn(`Invalid note name: ${noteName} in chord ${chordName}`);
+                    return null;
+                }
+            }
+            
+            if (validNotes.length === 0) {
+                console.warn(`No valid notes found in custom chord: ${chordName}`);
+                return null;
+            }
+            
+            return {
+                name: chordName,
+                notes: validNotes,
+                duration: '1n',
+                isCustom: true
+            };
+        }
+
+        // Test cases for custom chord parsing
+        const customChordTests = [
+            {
+                name: "Basic triad",
+                input: "C-E-G",
+                expected: {
+                    name: "C-E-G",
+                    notes: ["C4", "E4", "G4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Sharps",
+                input: "C#-F-G#",
+                expected: {
+                    name: "C#-F-G#",
+                    notes: ["C#4", "F4", "G#4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Flats",
+                input: "Db-F-Ab",
+                expected: {
+                    name: "Db-F-Ab",
+                    notes: ["Db4", "F4", "Ab4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Extended chord",
+                input: "A-C#-E-G-B",
+                expected: {
+                    name: "A-C#-E-G-B",
+                    notes: ["A4", "C#4", "E4", "G4", "B4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Mixed sharps and flats",
+                input: "C#-F-Bb-D",
+                expected: {
+                    name: "C#-F-Bb-D",
+                    notes: ["C#4", "F4", "Bb4", "D4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Single note",
+                input: "A",
+                expected: {
+                    name: "A",
+                    notes: ["A4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Invalid note",
+                input: "C-X-G",
+                expected: null
+            },
+            {
+                name: "Empty parts",
+                input: "C--G",
+                expected: {
+                    name: "C--G",
+                    notes: ["C4", "G4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Case insensitive",
+                input: "c-e-g",
+                expected: {
+                    name: "c-e-g",
+                    notes: ["C4", "E4", "G4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            },
+            {
+                name: "Enharmonic equivalents",
+                input: "C#-Db-D#-Eb",
+                expected: {
+                    name: "C#-Db-D#-Eb",
+                    notes: ["C#4", "Db4", "D#4", "Eb4"],
+                    duration: "1n",
+                    isCustom: true
+                }
+            }
+        ];
+
+        function runCustomChordTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '';
+            
+            let passed = 0;
+            let total = customChordTests.length;
+            
+            customChordTests.forEach((testCase, index) => {
+                const testDiv = document.createElement('div');
+                testDiv.className = 'test-case';
+                
+                try {
+                    const result = parseCustomChord(testCase.input);
+                    
+                    if (testCase.expected === null) {
+                        if (result === null) {
+                            testDiv.innerHTML = `
+                                <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                                Input: <span class="test-input">"${testCase.input}"</span><br>
+                                <span class="test-result">PASSED: Correctly returned null</span>
+                            `;
+                            passed++;
+                        } else {
+                            testDiv.innerHTML = `
+                                <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                                Input: <span class="test-input">"${testCase.input}"</span><br>
+                                <span class="test-error">FAILED: Expected null but got result</span>
+                            `;
+                        }
+                    } else {
+                        const matches = JSON.stringify(result) === JSON.stringify(testCase.expected);
+                        if (matches) {
+                            testDiv.innerHTML = `
+                                <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                                Input: <span class="test-input">"${testCase.input}"</span><br>
+                                <span class="test-result">PASSED</span>
+                            `;
+                            passed++;
+                        } else {
+                            testDiv.innerHTML = `
+                                <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                                Input: <span class="test-input">"${testCase.input}"</span><br>
+                                <span class="test-error">FAILED: Result didn't match expected</span><br>
+                                Expected: <pre>${JSON.stringify(testCase.expected, null, 2)}</pre>
+                                Got: <pre>${JSON.stringify(result, null, 2)}</pre>
+                            `;
+                        }
+                    }
+                } catch (error) {
+                    testDiv.innerHTML = `
+                        <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                        Input: <span class="test-input">"${testCase.input}"</span><br>
+                        <span class="test-error">FAILED: Exception - ${error.message}</span>
+                    `;
+                }
+                
+                resultsDiv.appendChild(testDiv);
+            });
+            
+            // Add summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'test-case';
+            summaryDiv.innerHTML = `
+                <strong>Test Summary</strong><br>
+                ${passed}/${total} tests passed<br>
+                ${passed === total ? 
+                    '<span class="test-result">All tests passed! 🎉</span>' : 
+                    '<span class="test-error">Some tests failed</span>'
+                }
+            `;
+            resultsDiv.appendChild(summaryDiv);
+            
+            // Add usage examples
+            const exampleDiv = document.createElement('div');
+            exampleDiv.className = 'test-case';
+            exampleDiv.innerHTML = `
+                <strong>Usage Examples</strong><br>
+                Try these in the main application:<br>
+                <code>C-E-G F-A-C G-B-D C-E-G</code><br>
+                <code>A-C#-E-G | D-F#-A | G-B-D</code><br>
+                <code>C-E-G-B-D | F-A-C-E | G-B-D-F</code><br>
+                <code>C-D-E-F#-G#-A#</code> (whole tone cluster)<br>
+                <code>A-C-E-G-Bb-D</code> (complex jazz voicing)
+            `;
+            resultsDiv.appendChild(exampleDiv);
+        }
+        
+        // Auto-run tests on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Custom chord test page loaded');
+        });
+    </script>
+</body>
+</html>

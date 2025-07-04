@@ -39,33 +39,52 @@
                     </div>
                     
                     <div class="control-group">
-                        <label for="key-select">Key (for Roman numerals):</label>
-                        <select id="key-select">
-                            <option value="C">C Major</option>
-                            <option value="G">G Major</option>
-                            <option value="D">D Major</option>
-                            <option value="A">A Major</option>
-                            <option value="E">E Major</option>
-                            <option value="B">B Major</option>
-                            <option value="F#">F# Major</option>
-                            <option value="Db">Db Major</option>
-                            <option value="Ab">Ab Major</option>
-                            <option value="Eb">Eb Major</option>
-                            <option value="Bb">Bb Major</option>
-                            <option value="F">F Major</option>
-                            <option value="Am">A Minor</option>
-                            <option value="Em">E Minor</option>
-                            <option value="Bm">B Minor</option>
-                            <option value="F#m">F# Minor</option>
-                            <option value="C#m">C# Minor</option>
-                            <option value="G#m">G# Minor</option>
-                            <option value="D#m">D# Minor</option>
-                            <option value="Bbm">Bb Minor</option>
-                            <option value="Fm">F Minor</option>
-                            <option value="Cm">C Minor</option>
-                            <option value="Gm">G Minor</option>
-                            <option value="Dm">D Minor</option>
-                        </select>
+                        <label for="key-dial">Key (for Roman numerals):</label>
+                        <div class="circle-of-fifths" id="key-dial">
+                            <div class="circle-container">
+                                <svg class="circle-svg" viewBox="0 0 300 300">
+                                    <!-- Outer circle background -->
+                                    <circle cx="150" cy="150" r="140" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+                                    
+                                    <!-- Major key segments -->
+                                    <g class="major-keys">
+                                        <g class="key-segment" data-key="C"><path d="M 150,150 L 150,10 A 140,140 0 0,1 223.2,40.9 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="187" y="35" text-anchor="middle" class="key-label major">C</text><text x="187" y="50" text-anchor="middle" class="key-signature">♮</text></g>
+                                        <g class="key-segment" data-key="G"><path d="M 150,150 L 223.2,40.9 A 140,140 0 0,1 270.7,89.3 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="247" y="65" text-anchor="middle" class="key-label major">G</text><text x="247" y="80" text-anchor="middle" class="key-signature">♯</text></g>
+                                        <g class="key-segment" data-key="D"><path d="M 150,150 L 270.7,89.3 A 140,140 0 0,1 290,150 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="280" y="120" text-anchor="middle" class="key-label major">D</text><text x="280" y="135" text-anchor="middle" class="key-signature">♯♯</text></g>
+                                        <g class="key-segment" data-key="A"><path d="M 150,150 L 290,150 A 140,140 0 0,1 270.7,210.7 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="280" y="180" text-anchor="middle" class="key-label major">A</text><text x="280" y="195" text-anchor="middle" class="key-signature">♯♯♯</text></g>
+                                        <g class="key-segment" data-key="E"><path d="M 150,150 L 270.7,210.7 A 140,140 0 0,1 223.2,259.1 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="247" y="235" text-anchor="middle" class="key-label major">E</text><text x="247" y="250" text-anchor="middle" class="key-signature">♯♯♯♯</text></g>
+                                        <g class="key-segment" data-key="B"><path d="M 150,150 L 223.2,259.1 A 140,140 0 0,1 150,290 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="187" y="265" text-anchor="middle" class="key-label major">B</text><text x="187" y="280" text-anchor="middle" class="key-signature">♯♯♯♯♯</text></g>
+                                        <g class="key-segment" data-key="F#"><path d="M 150,150 L 150,290 A 140,140 0 0,1 76.8,259.1 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="113" y="265" text-anchor="middle" class="key-label major">F♯</text><text x="113" y="280" text-anchor="middle" class="key-signature">♯♯♯♯♯♯</text></g>
+                                        <g class="key-segment" data-key="Db"><path d="M 150,150 L 76.8,259.1 A 140,140 0 0,1 29.3,210.7 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="53" y="235" text-anchor="middle" class="key-label major">D♭</text><text x="53" y="250" text-anchor="middle" class="key-signature">♭♭♭♭♭</text></g>
+                                        <g class="key-segment" data-key="Ab"><path d="M 150,150 L 29.3,210.7 A 140,140 0 0,1 10,150 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="20" y="180" text-anchor="middle" class="key-label major">A♭</text><text x="20" y="195" text-anchor="middle" class="key-signature">♭♭♭♭</text></g>
+                                        <g class="key-segment" data-key="Eb"><path d="M 150,150 L 10,150 A 140,140 0 0,1 29.3,89.3 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="20" y="120" text-anchor="middle" class="key-label major">E♭</text><text x="20" y="135" text-anchor="middle" class="key-signature">♭♭♭</text></g>
+                                        <g class="key-segment" data-key="Bb"><path d="M 150,150 L 29.3,89.3 A 140,140 0 0,1 76.8,40.9 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="53" y="65" text-anchor="middle" class="key-label major">B♭</text><text x="53" y="80" text-anchor="middle" class="key-signature">♭♭</text></g>
+                                        <g class="key-segment" data-key="F"><path d="M 150,150 L 76.8,40.9 A 140,140 0 0,1 150,10 Z" fill="#e8f4fd" stroke="#007bff" stroke-width="1"/><text x="113" y="35" text-anchor="middle" class="key-label major">F</text><text x="113" y="50" text-anchor="middle" class="key-signature">♭</text></g>
+                                    </g>
+                                    
+                                    <!-- Minor keys inner circle -->
+                                    <circle cx="150" cy="150" r="85" fill="#fff3cd" stroke="#ffc107" stroke-width="1"/>
+                                    <g class="minor-keys">
+                                        <g class="key-segment" data-key="Am"><text x="150" y="75" text-anchor="middle" class="key-label minor">am</text></g>
+                                        <g class="key-segment" data-key="Em"><text x="194" y="95" text-anchor="middle" class="key-label minor">em</text></g>
+                                        <g class="key-segment" data-key="Bm"><text x="220" y="130" text-anchor="middle" class="key-label minor">bm</text></g>
+                                        <g class="key-segment" data-key="F#m"><text x="225" y="160" text-anchor="middle" class="key-label minor">f♯m</text></g>
+                                        <g class="key-segment" data-key="C#m"><text x="220" y="190" text-anchor="middle" class="key-label minor">c♯m</text></g>
+                                        <g class="key-segment" data-key="G#m"><text x="194" y="225" text-anchor="middle" class="key-label minor">g♯m</text></g>
+                                        <g class="key-segment" data-key="D#m"><text x="150" y="235" text-anchor="middle" class="key-label minor">d♯m</text></g>
+                                        <g class="key-segment" data-key="Bbm"><text x="106" y="225" text-anchor="middle" class="key-label minor">b♭m</text></g>
+                                        <g class="key-segment" data-key="Fm"><text x="80" y="190" text-anchor="middle" class="key-label minor">fm</text></g>
+                                        <g class="key-segment" data-key="Cm"><text x="75" y="160" text-anchor="middle" class="key-label minor">cm</text></g>
+                                        <g class="key-segment" data-key="Gm"><text x="80" y="130" text-anchor="middle" class="key-label minor">gm</text></g>
+                                        <g class="key-segment" data-key="Dm"><text x="106" y="95" text-anchor="middle" class="key-label minor">dm</text></g>
+                                    </g>
+                                    
+                                    <!-- Center indicator -->
+                                    <circle cx="150" cy="150" r="30" fill="#28a745" stroke="#ffffff" stroke-width="3"/>
+                                    <text x="150" y="158" text-anchor="middle" class="center-label" id="selected-key-display">C</text>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="control-group">

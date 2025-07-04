@@ -1,0 +1,39 @@
+{
+  "name": "musical-accompanist-tool",
+  "version": "1.0.0",
+  "description": "A web-based musical accompanist tool for practice and learning",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "test": "open test.html",
+    "demo": "open demo.html"
+  },
+  "keywords": [
+    "music",
+    "accompaniment",
+    "chord-progressions",
+    "web-audio",
+    "practice-tool",
+    "just-intonation",
+    "music-education"
+  ],
+  "author": "Musical Accompanist Tool",
+  "license": "MIT",
+  "dependencies": {
+    "tone": "^14.8.49"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/musical-accompanist-tool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/musical-accompanist-tool/issues"
+  },
+  "homepage": "https://github.com/yourusername/musical-accompanist-tool#readme",
+  "browserslist": [
+    "last 2 versions",
+    "> 1%",
+    "not dead"
+  ]
+}

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Accompanist - Test Suite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .test-input {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .test-result {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .test-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .run-tests {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+        .run-tests:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h1>🧪 Musical Accompanist Test Suite</h1>
+        <p>This page tests the chord parsing and audio functionality of the Musical Accompanist Tool.</p>
+        
+        <button class="run-tests" onclick="runAllTests()">Run All Tests</button>
+        
+        <div id="test-results"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <script>
+        // Simplified version of the chord parsing logic for testing
+        function parseChord(chordName) {
+            const chordPatterns = {
+                'C': ['C4', 'E4', 'G4'],
+                'Dm': ['D4', 'F4', 'A4'],
+                'F': ['F4', 'A4', 'C5'],
+                'G': ['G4', 'B4', 'D5'],
+                'G7': ['G4', 'B4', 'D5', 'F5'],
+                'Am': ['A4', 'C5', 'E5'],
+                'A7': ['A4', 'C#5', 'E5', 'G5'],
+                'D': ['D4', 'F#4', 'A4'],
+                'E': ['E4', 'G#4', 'B4'],
+                'Bm': ['B4', 'D5', 'F#5']
+            };
+            
+            const notes = chordPatterns[chordName];
+            if (!notes) {
+                return null;
+            }
+            
+            return {
+                name: chordName,
+                notes: notes,
+                duration: '1n'
+            };
+        }
+        
+        function parseChordString(input) {
+            const chords = [];
+            const parts = input.split(/[\s|]+/).filter(part => part.trim());
+            
+            for (const part of parts) {
+                const chord = parseChord(part.trim());
+                if (chord) {
+                    chords.push(chord);
+                }
+            }
+            
+            if (chords.length === 0) {
+                throw new Error('No valid chords found');
+            }
+            
+            return chords;
+        }
+        
+        // Test cases
+        const testCases = [
+            {
+                name: "Simple major chord",
+                input: "C",
+                expected: [{ name: "C", notes: ["C4", "E4", "G4"], duration: "1n" }]
+            },
+            {
+                name: "Simple progression",
+                input: "C F G C",
+                expected: [
+                    { name: "C", notes: ["C4", "E4", "G4"], duration: "1n" },
+                    { name: "F", notes: ["F4", "A4", "C5"], duration: "1n" },
+                    { name: "G", notes: ["G4", "B4", "D5"], duration: "1n" },
+                    { name: "C", notes: ["C4", "E4", "G4"], duration: "1n" }
+                ]
+            },
+            {
+                name: "Progression with bar lines",
+                input: "C | Am | F | G",
+                expected: [
+                    { name: "C", notes: ["C4", "E4", "G4"], duration: "1n" },
+                    { name: "Am", notes: ["A4", "C5", "E5"], duration: "1n" },
+                    { name: "F", notes: ["F4", "A4", "C5"], duration: "1n" },
+                    { name: "G", notes: ["G4", "B4", "D5"], duration: "1n" }
+                ]
+            },
+            {
+                name: "Minor and 7th chords",
+                input: "Dm G7 C",
+                expected: [
+                    { name: "Dm", notes: ["D4", "F4", "A4"], duration: "1n" },
+                    { name: "G7", notes: ["G4", "B4", "D5", "F5"], duration: "1n" },
+                    { name: "C", notes: ["C4", "E4", "G4"], duration: "1n" }
+                ]
+            },
+            {
+                name: "Empty input",
+                input: "",
+                shouldThrow: true
+            },
+            {
+                name: "Invalid chord",
+                input: "C X F",
+                expected: [
+                    { name: "C", notes: ["C4", "E4", "G4"], duration: "1n" },
+                    { name: "F", notes: ["F4", "A4", "C5"], duration: "1n" }
+                ]
+            }
+        ];
+        
+        function runAllTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '';
+            
+            let passed = 0;
+            let total = testCases.length;
+            
+            testCases.forEach((testCase, index) => {
+                const testDiv = document.createElement('div');
+                testDiv.className = 'test-case';
+                
+                try {
+                    const result = parseChordString(testCase.input);
+                    
+                    if (testCase.shouldThrow) {
+                        testDiv.innerHTML = `
+                            <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                            Input: <span class="test-input">"${testCase.input}"</span><br>
+                            <span class="test-error">FAILED: Expected error but got result</span>
+                        `;
+                    } else {
+                        const matches = JSON.stringify(result) === JSON.stringify(testCase.expected);
+                        if (matches) {
+                            testDiv.innerHTML = `
+                                <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                                Input: <span class="test-input">"${testCase.input}"</span><br>
+                                <span class="test-result">PASSED</span>
+                            `;
+                            passed++;
+                        } else {
+                            testDiv.innerHTML = `
+                                <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                                Input: <span class="test-input">"${testCase.input}"</span><br>
+                                <span class="test-error">FAILED: Result didn't match expected</span><br>
+                                Expected: ${JSON.stringify(testCase.expected, null, 2)}<br>
+                                Got: ${JSON.stringify(result, null, 2)}
+                            `;
+                        }
+                    }
+                } catch (error) {
+                    if (testCase.shouldThrow) {
+                        testDiv.innerHTML = `
+                            <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                            Input: <span class="test-input">"${testCase.input}"</span><br>
+                            <span class="test-result">PASSED: Correctly threw error</span>
+                        `;
+                        passed++;
+                    } else {
+                        testDiv.innerHTML = `
+                            <strong>Test ${index + 1}: ${testCase.name}</strong><br>
+                            Input: <span class="test-input">"${testCase.input}"</span><br>
+                            <span class="test-error">FAILED: Unexpected error - ${error.message}</span>
+                        `;
+                    }
+                }
+                
+                resultsDiv.appendChild(testDiv);
+            });
+            
+            // Add summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'test-case';
+            summaryDiv.innerHTML = `
+                <strong>Test Summary</strong><br>
+                ${passed}/${total} tests passed<br>
+                ${passed === total ? 
+                    '<span class="test-result">All tests passed! 🎉</span>' : 
+                    '<span class="test-error">Some tests failed</span>'
+                }
+            `;
+            resultsDiv.appendChild(summaryDiv);
+            
+            // Test audio initialization
+            testAudioInitialization();
+        }
+        
+        async function testAudioInitialization() {
+            const resultsDiv = document.getElementById('test-results');
+            const audioTestDiv = document.createElement('div');
+            audioTestDiv.className = 'test-case';
+            
+            try {
+                // Test Tone.js initialization
+                await Tone.start();
+                
+                // Create a simple synth
+                const synth = new Tone.Synth().toDestination();
+                
+                // Test playing a note
+                synth.triggerAttackRelease('C4', '8n');
+                
+                audioTestDiv.innerHTML = `
+                    <strong>Audio Test</strong><br>
+                    <span class="test-result">PASSED: Audio system initialized successfully</span><br>
+                    You should hear a brief C4 note.
+                `;
+                
+                // Clean up
+                synth.dispose();
+                
+            } catch (error) {
+                audioTestDiv.innerHTML = `
+                    <strong>Audio Test</strong><br>
+                    <span class="test-error">FAILED: ${error.message}</span>
+                `;
+            }
+            
+            resultsDiv.appendChild(audioTestDiv);
+        }
+        
+        // Test frequency calculations
+        function testFrequencyCalculations() {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-case';
+            
+            try {
+                // Test basic frequency conversion
+                const a4Freq = Tone.Frequency('A4').toFrequency();
+                const expectedA4 = 440;
+                
+                if (Math.abs(a4Freq - expectedA4) < 0.1) {
+                    testDiv.innerHTML = `
+                        <strong>Frequency Test</strong><br>
+                        <span class="test-result">PASSED: A4 = ${a4Freq}Hz (expected ~440Hz)</span>
+                    `;
+                } else {
+                    testDiv.innerHTML = `
+                        <strong>Frequency Test</strong><br>
+                        <span class="test-error">FAILED: A4 = ${a4Freq}Hz (expected ~440Hz)</span>
+                    `;
+                }
+            } catch (error) {
+                testDiv.innerHTML = `
+                    <strong>Frequency Test</strong><br>
+                    <span class="test-error">FAILED: ${error.message}</span>
+                `;
+            }
+            
+            document.getElementById('test-results').appendChild(testDiv);
+        }
+        
+        // Auto-run tests on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Test page loaded');
+        });
+    </script>
+</body>
+</html>
