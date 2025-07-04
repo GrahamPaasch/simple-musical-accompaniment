@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Accompanist Tool</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Musical Accompanist Tool</h1>
+            <p>Practice with customizable chord progressions and drones</p>
+        </header>
+
+        <main>
+            <!-- Control Panel -->
+            <section class="control-panel">
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label for="tempo">Tempo (BPM):</label>
+                        <input type="range" id="tempo" min="40" max="200" value="120">
+                        <span id="tempo-display">120</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="volume">Volume:</label>
+                        <input type="range" id="volume" min="0" max="100" value="50">
+                        <span id="volume-display">50%</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="tuning">Tuning:</label>
+                        <select id="tuning">
+                            <option value="equal">Equal Temperament</option>
+                            <option value="just">Just Intonation</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="key-select">Key (for Roman numerals):</label>
+                        <select id="key-select">
+                            <option value="C">C Major</option>
+                            <option value="G">G Major</option>
+                            <option value="D">D Major</option>
+                            <option value="A">A Major</option>
+                            <option value="E">E Major</option>
+                            <option value="B">B Major</option>
+                            <option value="F#">F# Major</option>
+                            <option value="Db">Db Major</option>
+                            <option value="Ab">Ab Major</option>
+                            <option value="Eb">Eb Major</option>
+                            <option value="Bb">Bb Major</option>
+                            <option value="F">F Major</option>
+                            <option value="Am">A Minor</option>
+                            <option value="Em">E Minor</option>
+                            <option value="Bm">B Minor</option>
+                            <option value="F#m">F# Minor</option>
+                            <option value="C#m">C# Minor</option>
+                            <option value="G#m">G# Minor</option>
+                            <option value="D#m">D# Minor</option>
+                            <option value="Bbm">Bb Minor</option>
+                            <option value="Fm">F Minor</option>
+                            <option value="Cm">C Minor</option>
+                            <option value="Gm">G Minor</option>
+                            <option value="Dm">D Minor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="time-signature">Time Signature:</label>
+                        <select id="time-signature">
+                            <option value="2">2/4</option>
+                            <option value="3">3/4</option>
+                            <option value="4" selected>4/4</option>
+                            <option value="6">6/8</option>
+                            <option value="8">8/8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="metronome"> Metronome Click
+                        </label>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="loop" checked> Loop Mode
+                        </label>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="count-in" checked> Count-in
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+
+
+            <!-- Chord Input -->
+            <section class="chord-input-section">
+                <h2>Custom Chord Progression</h2>
+                <div class="input-group">
+                    <label for="chord-input">Enter chords (separate by spaces, use | for bar lines, use - for rest):</label>
+                    <textarea id="chord-input" placeholder="Example: C F G7 C | A C4 F# | C-E-G A-C#-E-G C F G7 C"></textarea>
+                    <small>Supported chords: C, Dm, F, G7, Am, etc. Use # for sharps (C#, F#m) or b for flats (Db, Bb). Use - for rest.<br>
+                    <strong>Single notes:</strong> Use note names like C, A4, F#, Bb5 for individual pitches.<br>
+                    <strong>Custom chords:</strong> Use note-dash-note syntax (e.g., C-E-G, A-C#-E-G, D-F-A) to create any chord combination.<br>
+                    <strong>Roman numerals:</strong> Use I, IV, V for major chords, ii, iii, vi for minor chords (e.g., I IV V I, ii V I). Set key above for proper interpretation.<br>
+                    <strong>Scale degrees:</strong> Use numbers 1-7 for scale degrees (e.g., 1 4 5 1 for I-IV-V-I progression). Works the same as Roman numerals.</small>
+                </div>
+                <button id="parse-chords">Parse Chords</button>
+            </section>
+
+            <!-- Piano Keyboard -->
+            <section class="piano-section">
+                <h2>🎹 Piano Keyboard - Click to Build Chords</h2>
+                <div id="piano-keyboard" class="piano-keyboard">
+                    <div class="piano-keys">
+                        <!-- White keys -->
+                        <div class="key white" data-note="C4">C</div>
+                        <div class="key white" data-note="D4">D</div>
+                        <div class="key white" data-note="E4">E</div>
+                        <div class="key white" data-note="F4">F</div>
+                        <div class="key white" data-note="G4">G</div>
+                        <div class="key white" data-note="A4">A</div>
+                        <div class="key white" data-note="B4">B</div>
+                        
+                        <!-- Black keys -->
+                        <div class="key black" data-note="C#4" style="left: 35px;">C#</div>
+                        <div class="key black" data-note="D#4" style="left: 85px;">D#</div>
+                        <div class="key black" data-note="F#4" style="left: 185px;">F#</div>
+                        <div class="key black" data-note="G#4" style="left: 235px;">G#</div>
+                        <div class="key black" data-note="A#4" style="left: 285px;">A#</div>
+                    </div>
+                </div>
+                <div class="piano-controls">
+                    <div class="chord-builder">
+                        <label>Selected Notes:</label>
+                        <div id="selected-notes" class="selected-notes"></div>
+                        <button id="play-selected">Play Selected</button>
+                        <button id="clear-selection">Clear</button>
+                        <button id="add-to-progression">Add to Progression</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chord Display -->
+            <section class="chord-display-section">
+                <div class="chord-display-header">
+                    <h2>Current Progression</h2>
+                    <div class="progression-controls">
+                        <div class="progression-info">
+                            <span id="progression-length">0 chords</span>
+                            <span id="progression-duration">0:00</span>
+                        </div>
+                        <div class="progression-actions">
+                            <button id="transpose-down" class="action-btn" title="Transpose down">♭</button>
+                            <button id="transpose-up" class="action-btn" title="Transpose up">♯</button>
+                            <button id="analyze-progression" class="action-btn" title="Analyze progression">🔍</button>
+                            <button id="export-progression" class="action-btn" title="Export progression">💾</button>
+                            <button id="import-progression" class="action-btn" title="Import progression">📁</button>
+                            <button id="clear-progression" class="clear-progression-btn">🗑️ Clear</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Integrated Preset Library within Current Progression -->
+                <div class="progression-presets">
+                    <h3>🎵 Quick Add Presets</h3>
+                    <div class="preset-categories">
+                        <!-- Roman Numeral Progressions -->
+                        <div class="preset-category">
+                            <span class="preset-category-title">Roman Numerals</span>
+                            <div class="preset-row">
+                                <div class="preset-progression" draggable="true" data-preset-name="roman-145" data-preset-chords="I,IV,V,I">I-IV-V-I</div>
+                                <div class="preset-progression" draggable="true" data-preset-name="roman-1645" data-preset-chords="I,vi,IV,V">I-vi-IV-V</div>
+                                <div class="preset-progression" draggable="true" data-preset-name="roman-circle" data-preset-chords="vi,IV,I,V">vi-IV-I-V</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Essential Chords -->
+                        <div class="preset-category">
+                            <span class="preset-category-title">Common Chords</span>
+                            <div class="preset-row">
+                                <div class="preset-chord" draggable="true" data-chord-name="C" data-chord-notes="C4,E4,G4">C</div>
+                                <div class="preset-chord" draggable="true" data-chord-name="F" data-chord-notes="F3,A3,C4">F</div>
+                                <div class="preset-chord" draggable="true" data-chord-name="G" data-chord-notes="G3,B3,D4">G</div>
+                                <div class="preset-chord" draggable="true" data-chord-name="Am" data-chord-notes="A3,C4,E4">Am</div>
+                                <div class="preset-chord" draggable="true" data-chord-name="G7" data-chord-notes="G3,B3,D4,F4">G7</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Drones -->
+                        <div class="preset-category">
+                            <span class="preset-category-title">Drones</span>
+                            <div class="preset-row">
+                                <div class="preset-chord drone" draggable="true" data-chord-name="A Drone" data-chord-notes="A4" data-is-drone="true">A♪</div>
+                                <div class="preset-chord drone" draggable="true" data-chord-name="D Drone" data-chord-notes="D4,A4" data-is-drone="true">D♪</div>
+                                <div class="preset-chord" draggable="true" data-chord-name="C" data-chord-notes="C4" data-is-single="true">C♫</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preset-instructions">
+                        💡 Drag presets into your progression or drop between chords to insert
+                    </div>
+                </div>
+                
+                <div id="chord-display" class="chord-display">
+                    <div class="chord-item">No chords loaded</div>
+                </div>
+                <div id="progression-analysis" class="progression-analysis" style="display: none;">
+                    <h3>Progression Analysis</h3>
+                    <div id="analysis-content"></div>
+                </div>
+            </section>
+
+            <!-- Playback Controls -->
+            <section class="playback-controls">
+                <button id="play-btn" class="play-btn">▶ Play</button>
+                <button id="pause-btn" class="pause-btn" disabled>⏸ Pause</button>
+                <button id="stop-btn" class="stop-btn" disabled>⏹ Stop</button>
+            </section>
+
+            <!-- Status Display -->
+            <section class="status-section">
+                <div id="status-display">Ready to play</div>
+                <div id="current-chord-display"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Use headphones for best experience. Built with Tone.js and Web Audio API.</p>
+        </footer>
+    </div>
+
+    <!-- Hidden elements for modals -->
+    <div id="chord-edit-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Edit Chord</h3>
+            <input type="text" id="chord-edit-input" placeholder="Enter chord name (e.g., C, Am, F7, C-E-G)">
+            <div class="modal-actions">
+                <button id="save-chord-edit" class="btn-primary">Save</button>
+                <button id="cancel-chord-edit" class="btn-secondary">Cancel</button>
+                <button id="delete-chord" class="btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chord-context-menu" class="context-menu" style="display: none;">
+        <div class="menu-item" id="context-edit">✏️ Edit</div>
+        <div class="menu-item" id="context-duplicate">📋 Duplicate</div>
+        <div class="menu-item" id="context-substitute">🔄 Substitute</div>
+        <div class="menu-item" id="context-insert-before">➕ Insert Before</div>
+        <div class="menu-item" id="context-insert-after">➕ Insert After</div>
+        <div class="menu-item" id="context-delete">🗑️ Delete</div>
+    </div>
+
+    <input type="file" id="import-file-input" style="display: none;" accept=".json,.txt">
+
+    <script src="script.js"></script>
+</body>
+</html>
