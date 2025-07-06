@@ -1166,4 +1166,86 @@ footer {
     font-family: 'Courier New', monospace;
 }
 
+/* Slot selection and navigation */
+.selected-slot-display {
+    background: #e7f3ff;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 8px 0;
+    font-size: 0.9rem;
+}
+
+.slot-selection-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.slot-navigation {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.slot-navigation button {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.slot-navigation button:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.slot-navigation input[type="number"] {
+    width: 40px;
+    padding: 4px 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.slot-navigation input[type="number"]:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+/* Enhanced visual feedback for selected slot */
+.chord-item.selected-for-piano {
+    border: 3px solid #28a745 !important;
+    background: #d4edda !important;
+    animation: pulse-green 2s infinite;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+.chord-item.selected-for-piano::before {
+    content: "SELECTED";
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #28a745;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(40, 167, 69, 0.8); }
+    100% { box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); }
+}
+
 

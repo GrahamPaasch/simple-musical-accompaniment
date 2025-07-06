@@ -18,6 +18,7 @@ class MusicalAccompanist {
         this.loopMode = true;
         this.metronomeEnabled = false;
         this.selectedNotes = []; // For piano keyboard
+        this.targetChordIndex = null; // Track which slot to fill with piano selection
         this.timeSignature = 4; // Default to 4/4 time
         this.draggedFromIndex = null;
         this.contextChordIndex = null; // For context menu
@@ -140,6 +141,15 @@ class MusicalAccompanist {
             this.addSelectionToProgression();
         });
 
+        // New piano controls
+        document.getElementById('add-rest').addEventListener('click', () => {
+            this.addRestToTarget();
+        });
+
+        document.getElementById('clear-slot-selection').addEventListener('click', () => {
+            this.clearSlotSelection();
+        });
+
         // Enhanced progression controls
         document.getElementById('transpose-up').addEventListener('click', () => {
             this.transposeProgression(1);
@@ -159,6 +169,28 @@ class MusicalAccompanist {
 
         document.getElementById('import-file-input').addEventListener('change', (e) => {
             this.importProgression(e.target.files[0]);
+        });
+
+        // Enhanced piano controls for slot navigation
+        document.getElementById('prev-empty-slot').addEventListener('click', () => {
+            this.selectPreviousEmptySlot();
+        });
+
+        document.getElementById('next-empty-slot').addEventListener('click', () => {
+            this.selectNextEmptySlot();
+        });
+
+        document.getElementById('goto-slot').addEventListener('click', () => {
+            this.gotoSpecificSlot();
+        });
+
+        // Allow Enter key on measure/beat inputs
+        document.getElementById('goto-measure').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.gotoSpecificSlot();
+        });
+
+        document.getElementById('goto-beat').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.gotoSpecificSlot();
         });
 
         // Modal and context menu events
@@ -231,315 +263,6 @@ class MusicalAccompanist {
      * Load a preset configuration
      */
     loadPreset(presetName) {
-        const presets = {
-            'drone-a': {
-                name: 'Drone: A (440Hz)',
-                chords: [{ name: 'A', notes: ['A4'], duration: '1n', isDrone: true, isSingleNote: true }],
-                tempo: 60,
-                key: 'A'
-            },
-            'single-note-c': {
-                name: 'Single Note: C',
-                chords: [{ name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true }],
-                tempo: 120,
-                key: 'C'
-            },
-            'chromatic-scale': {
-                name: 'Chromatic Scale',
-                chords: [
-                    { name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true },
-                    { name: 'C#', notes: ['C#4'], duration: '1n', isSingleNote: true },
-                    { name: 'D', notes: ['D4'], duration: '1n', isSingleNote: true },
-                    { name: 'D#', notes: ['D#4'], duration: '1n', isSingleNote: true },
-                    { name: 'E', notes: ['E4'], duration: '1n', isSingleNote: true },
-                    { name: 'F', notes: ['F4'], duration: '1n', isSingleNote: true },
-                    { name: 'F#', notes: ['F#4'], duration: '1n', isSingleNote: true },
-                    { name: 'G', notes: ['G4'], duration: '1n', isSingleNote: true },
-                    { name: 'G#', notes: ['G#4'], duration: '1n', isSingleNote: true },
-                    { name: 'A', notes: ['A4'], duration: '1n', isSingleNote: true },
-                    { name: 'A#', notes: ['A#4'], duration: '1n', isSingleNote: true },
-                    { name: 'B', notes: ['B4'], duration: '1n', isSingleNote: true },
-                    { name: 'C5', notes: ['C5'], duration: '1n', isSingleNote: true }
-                ],
-                tempo: 80,
-                key: 'C'
-            },
-            'g-major-145': {
-                name: 'G Major I-IV-V',
-                chords: [
-                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' },
-                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'D', notes: ['D4', 'F#4', 'A4'], duration: '1n' },
-                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' }
-                ],
-                tempo: 100,
-                key: 'G'
-            },
-            'c-major-1645': {
-                name: 'C Major I-vi-IV-V',
-                chords: [
-                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'Am', notes: ['A3', 'C4', 'E4'], duration: '1n' },
-                    { name: 'F', notes: ['F3', 'A3', 'C4'], duration: '1n' },
-                    { name: 'G', notes: ['G3', 'B3', 'D4'], duration: '1n' }
-                ],
-                tempo: 120,
-                key: 'C'
-            },
-            'd-major-drone': {
-                name: 'D Major Drone',
-                chords: [{ name: 'D', notes: ['D4', 'A4'], duration: '1n', isDrone: true }],
-                tempo: 60,
-                key: 'D'
-            },
-            'blues-12bar': {
-                name: '12-Bar Blues in A',
-                chords: [
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' }
-                ],
-                tempo: 120,
-                key: 'A'
-            }
-        };
-
-        const preset = presets[presetName];
-        if (!preset) {
-            this.showStatus('Preset not found');
-            return;
-        }
-
-        this.chordProgression = preset.chords;
-        this.tempo = preset.tempo;
-        
-        // Update UI
-        document.getElementById('tempo').value = this.tempo;
-        document.getElementById('tempo-display').textContent = this.tempo;
-        
-        this.displayChords();
-        this.showStatus(`Loaded preset: ${preset.name}`);
-    }
-
-    /**
-     * Get preset data without loading it
-     */
-    getPresetData(presetName) {
-        const presets = {
-            'drone-a': {
-                name: 'Drone: A (440Hz)',
-                chords: [{ name: 'A', notes: ['A4'], duration: '1n', isDrone: true, isSingleNote: true }],
-                tempo: 60,
-                key: 'A'
-            },
-            'single-note-c': {
-                name: 'Single Note: C',
-                chords: [{ name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true }],
-                tempo: 120,
-                key: 'C'
-            },
-            'chromatic-scale': {
-                name: 'Chromatic Scale',
-                chords: [
-                    { name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true },
-                    { name: 'C#', notes: ['C#4'], duration: '1n', isSingleNote: true },
-                    { name: 'D', notes: ['D4'], duration: '1n', isSingleNote: true },
-                    { name: 'D#', notes: ['D#4'], duration: '1n', isSingleNote: true },
-                    { name: 'E', notes: ['E4'], duration: '1n', isSingleNote: true },
-                    { name: 'F', notes: ['F4'], duration: '1n', isSingleNote: true },
-                    { name: 'F#', notes: ['F#4'], duration: '1n', isSingleNote: true },
-                    { name: 'G', notes: ['G4'], duration: '1n', isSingleNote: true },
-                    { name: 'G#', notes: ['G#4'], duration: '1n', isSingleNote: true },
-                    { name: 'A', notes: ['A4'], duration: '1n', isSingleNote: true },
-                    { name: 'A#', notes: ['A#4'], duration: '1n', isSingleNote: true },
-                    { name: 'B', notes: ['B4'], duration: '1n', isSingleNote: true },
-                    { name: 'C5', notes: ['C5'], duration: '1n', isSingleNote: true }
-                ],
-                tempo: 80,
-                key: 'C'
-            },
-            'g-major-145': {
-                name: 'G Major I-IV-V',
-                chords: [
-                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' },
-                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'D', notes: ['D4', 'F#4', 'A4'], duration: '1n' },
-                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' }
-                ],
-                tempo: 100,
-                key: 'G'
-            },
-            'c-major-1645': {
-                name: 'C Major I-vi-IV-V',
-                chords: [
-                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'Am', notes: ['A3', 'C4', 'E4'], duration: '1n' },
-                    { name: 'F', notes: ['F3', 'A3', 'C4'], duration: '1n' },
-                    { name: 'G', notes: ['G3', 'B3', 'D4'], duration: '1n' }
-                ],
-                tempo: 120,
-                key: 'C'
-            },
-            'd-major-drone': {
-                name: 'D Major Drone',
-                chords: [{ name: 'D', notes: ['D4', 'A4'], duration: '1n', isDrone: true }],
-                tempo: 60,
-                key: 'D'
-            },
-            'blues-12bar': {
-                name: '12-Bar Blues in A',
-                chords: [
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' }
-                ],
-                tempo: 120,
-                key: 'A'
-            }
-        };
-
-        const preset = presets[presetName];
-        if (!preset) {
-            this.showStatus('Preset not found');
-            return;
-        }
-
-        this.chordProgression = preset.chords;
-        this.tempo = preset.tempo;
-        
-        // Update UI
-        document.getElementById('tempo').value = this.tempo;
-        document.getElementById('tempo-display').textContent = this.tempo;
-        
-        this.displayChords();
-        this.showStatus(`Loaded preset: ${preset.name}`);
-    }
-
-    /**
-     * Get preset data without loading it
-     */
-    getPresetData(presetName) {
-        const presets = {
-            'drone-a': {
-                name: 'Drone: A (440Hz)',
-                chords: [{ name: 'A', notes: ['A4'], duration: '1n', isDrone: true, isSingleNote: true }],
-                tempo: 60,
-                key: 'A'
-            },
-            'single-note-c': {
-                name: 'Single Note: C',
-                chords: [{ name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true }],
-                tempo: 120,
-                key: 'C'
-            },
-            'chromatic-scale': {
-                name: 'Chromatic Scale',
-                chords: [
-                    { name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true },
-                    { name: 'C#', notes: ['C#4'], duration: '1n', isSingleNote: true },
-                    { name: 'D', notes: ['D4'], duration: '1n', isSingleNote: true },
-                    { name: 'D#', notes: ['D#4'], duration: '1n', isSingleNote: true },
-                    { name: 'E', notes: ['E4'], duration: '1n', isSingleNote: true },
-                    { name: 'F', notes: ['F4'], duration: '1n', isSingleNote: true },
-                    { name: 'F#', notes: ['F#4'], duration: '1n', isSingleNote: true },
-                    { name: 'G', notes: ['G4'], duration: '1n', isSingleNote: true },
-                    { name: 'G#', notes: ['G#4'], duration: '1n', isSingleNote: true },
-                    { name: 'A', notes: ['A4'], duration: '1n', isSingleNote: true },
-                    { name: 'A#', notes: ['A#4'], duration: '1n', isSingleNote: true },
-                    { name: 'B', notes: ['B4'], duration: '1n', isSingleNote: true },
-                    { name: 'C5', notes: ['C5'], duration: '1n', isSingleNote: true }
-                ],
-                tempo: 80,
-                key: 'C'
-            },
-            'g-major-145': {
-                name: 'G Major I-IV-V',
-                chords: [
-                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' },
-                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'D', notes: ['D4', 'F#4', 'A4'], duration: '1n' },
-                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' }
-                ],
-                tempo: 100,
-                key: 'G'
-            },
-            'c-major-1645': {
-                name: 'C Major I-vi-IV-V',
-                chords: [
-                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'Am', notes: ['A3', 'C4', 'E4'], duration: '1n' },
-                    { name: 'F', notes: ['F3', 'A3', 'C4'], duration: '1n' },
-                    { name: 'G', notes: ['G3', 'B3', 'D4'], duration: '1n' }
-                ],
-                tempo: 120,
-                key: 'C'
-            },
-            'd-major-drone': {
-                name: 'D Major Drone',
-                chords: [{ name: 'D', notes: ['D4', 'A4'], duration: '1n', isDrone: true }],
-                tempo: 60,
-                key: 'D'
-            },
-            'blues-12bar': {
-                name: '12-Bar Blues in A',
-                chords: [
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' },
-                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
-                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
-                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' }
-                ],
-                tempo: 120,
-                key: 'A'
-            }
-        };
-
-        const preset = presets[presetName];
-        if (!preset) {
-            this.showStatus('Preset not found');
-            return;
-        }
-
-        this.chordProgression = preset.chords;
-        this.tempo = preset.tempo;
-        
-        // Update UI
-        document.getElementById('tempo').value = this.tempo;
-        document.getElementById('tempo-display').textContent = this.tempo;
-        
-        this.displayChords();
-        this.showStatus(`Loaded preset: ${preset.name}`);
-    }
-
-    /**
-     * Get preset data without loading it
-     */
-    getPresetData(presetName) {
         const presets = {
             'drone-a': {
                 name: 'Drone: A (440Hz)',
@@ -1122,9 +845,14 @@ class MusicalAccompanist {
                     chordElement.classList.add('empty-slot');
                     chordElement.textContent = '';
                     
-                    // Make empty slots clickable to add chords
+                    // Make empty slots clickable to select for piano input
                     chordElement.addEventListener('click', () => {
-                        this.editChord(globalChordIndex);
+                        this.selectSlotForPiano(globalChordIndex);
+                    });
+                    
+                    // Add right-click context menu for options
+                    chordElement.addEventListener('contextmenu', (e) => {
+                        this.showEmptySlotMenu(e, globalChordIndex);
                     });
                 } else if (chord.isRest) {
                     chordElement.textContent = 'REST';
@@ -1224,6 +952,9 @@ class MusicalAccompanist {
         
         // Update progression info
         this.updateProgressionInfo();
+        
+        // Update slot selection display
+        this.updateSelectedSlotDisplay();
     }
 
     /**
@@ -1635,7 +1366,7 @@ class MusicalAccompanist {
         }
         
         // Create a custom chord name
-        const chordName = this.selectedNotes.map(note => note.replace('4', '')).join('-');
+        const chordName = this.selectedNotes.map(note => note.replace(/\d+$/, '')).join('-');
         
         // Create chord object
         const chord = {
@@ -1645,13 +1376,23 @@ class MusicalAccompanist {
             isCustom: true
         };
         
-        // Add to progression
-        this.chordProgression.push(chord);
+        // Check if we have a target slot selected
+        if (this.targetChordIndex !== null && this.targetChordIndex < this.chordProgression.length) {
+            // Fill the specific slot
+            this.chordProgression[this.targetChordIndex] = chord;
+            this.showStatus(`Filled slot ${this.targetChordIndex + 1} with ${chordName}`);
+            this.clearSlotSelection();
+        } else {
+            // Add to end of progression (original behavior)
+            this.chordProgression.push(chord);
+            this.showStatus(`Added ${chordName} to progression`);
+        }
         
         // Update display
         this.displayChords();
         
-        this.showStatus(`Added ${chordName} to progression`);
+        // Clear piano selection
+        this.clearSelection();
     }
 
     /**
@@ -1714,9 +1455,19 @@ class MusicalAccompanist {
         const numMeasures = parseInt(measureCountInput.value);
         
         // Validate input
-        if (isNaN(numMeasures) || numMeasures < 1 || numMeasures > 32) {
-            this.showStatus('Please enter a valid number of measures (1-32)');
+        if (isNaN(numMeasures) || numMeasures < 1) {
+            this.showStatus('Please enter a valid number of measures (minimum 1)');
             return;
+        }
+        
+        // Warn for very large progressions that might impact performance
+        if (numMeasures > 100) {
+            const chordsPerMeasure = this.timeSignature;
+            const totalChordSlots = numMeasures * chordsPerMeasure;
+            const confirmed = confirm(`Creating ${numMeasures} measures will generate ${totalChordSlots} chord slots. This may impact performance on slower devices. Continue?`);
+            if (!confirmed) {
+                return;
+            }
         }
         
         // Stop playback if currently playing
@@ -1744,8 +1495,241 @@ class MusicalAccompanist {
         // Update the display
         this.displayChords();
         
+        // Automatically select the first empty slot for convenience
+        if (totalChordSlots > 0) {
+            this.selectSlotForPiano(0);
+        }
+        
         // Show status message
-        this.showStatus(`Created ${numMeasures} empty measure${numMeasures > 1 ? 's' : ''} (${totalChordSlots} chord slots)`);
+        this.showStatus(`Created ${numMeasures} empty measure${numMeasures > 1 ? 's' : ''} (${totalChordSlots} chord slots) - First slot selected`);
+    }
+
+    /**
+     * Select an empty slot for piano input
+     */
+    selectSlotForPiano(slotIndex) {
+        // Clear any previous selection
+        this.clearSlotSelection();
+        
+        // Set the target slot
+        this.targetChordIndex = slotIndex;
+        
+        // Visually highlight the selected slot
+        const slotElement = document.querySelector(`[data-index="${slotIndex}"]`);
+        if (slotElement) {
+            slotElement.classList.add('selected-for-piano');
+        }
+        
+        // Update the piano interface to show which slot is being filled
+        this.updateSelectedSlotDisplay();
+        
+        this.showStatus(`Selected slot ${slotIndex + 1} (Measure ${Math.floor(slotIndex / this.timeSignature) + 1}, Beat ${(slotIndex % this.timeSignature) + 1}). Use piano keys or navigation arrows.`);
+    }
+    
+    /**
+     * Clear slot selection
+     */
+    clearSlotSelection() {
+        if (this.targetChordIndex !== null) {
+            // Remove visual highlight
+            const slotElement = document.querySelector(`[data-index="${this.targetChordIndex}"]`);
+            if (slotElement) {
+                slotElement.classList.remove('selected-for-piano');
+            }
+        }
+        
+        this.targetChordIndex = null;
+        this.updateSelectedSlotDisplay();
+    }
+    
+    /**
+     * Update the display to show which slot is selected for piano input
+     */
+    updateSelectedSlotDisplay() {
+        const slotDisplay = document.getElementById('selected-slot-display');
+        const slotInfoText = document.getElementById('slot-info-text');
+        
+        if (slotDisplay && slotInfoText) {
+            if (this.targetChordIndex !== null) {
+                const measures = this.getMeasureIndices(this.targetChordIndex);
+                const emptyCount = this.chordProgression.filter(chord => chord.isEmpty).length;
+                slotInfoText.textContent = `Selected: Measure ${measures.measureIndex + 1}, Beat ${measures.chordIndex + 1} (${emptyCount} empty slots remaining)`;
+                slotDisplay.style.display = 'block';
+            } else {
+                const emptyCount = this.chordProgression.filter(chord => chord.isEmpty).length;
+                if (emptyCount > 0) {
+                    slotInfoText.textContent = `${emptyCount} empty slots available - click one to select`;
+                } else {
+                    slotInfoText.textContent = 'No empty slots available';
+                }
+                slotDisplay.style.display = 'block';
+            }
+        }
+    }
+    
+    /**
+     * Show context menu for empty slots
+     */
+    showEmptySlotMenu(e, slotIndex) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Create simple context menu
+        const existingMenu = document.getElementById('empty-slot-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        
+        const menu = document.createElement('div');
+        menu.id = 'empty-slot-menu';
+        menu.className = 'context-menu';
+        menu.style.position = 'fixed';
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        menu.style.display = 'block';
+        menu.style.zIndex = '1000';
+        
+        menu.innerHTML = `
+            <div class="menu-item" onclick="musicalAccompanist.selectSlotForPiano(${slotIndex})">🎹 Fill with Piano</div>
+            <div class="menu-item" onclick="musicalAccompanist.fillSlotWithRest(${slotIndex})">⏸️ Add Rest</div>
+            <div class="menu-item" onclick="musicalAccompanist.editChord(${slotIndex})">✏️ Type Chord</div>
+        `;
+        
+        document.body.appendChild(menu);
+        
+        // Close menu when clicking elsewhere
+        setTimeout(() => {
+            document.addEventListener('click', function closeMenu() {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            });
+        }, 10);
+    }
+    
+    /**
+     * Fill a slot with a rest
+     */
+    fillSlotWithRest(slotIndex) {
+        if (slotIndex >= 0 && slotIndex < this.chordProgression.length) {
+            this.chordProgression[slotIndex] = {
+                name: '-',
+                notes: [],
+                duration: '1n',
+                isRest: true
+            };
+            
+            this.displayChords();
+            this.showStatus(`Added rest to slot ${slotIndex + 1}`);
+        }
+    }
+
+    /**
+     * Add a rest to the selected target slot
+     */
+    addRestToTarget() {
+        if (this.targetChordIndex !== null && this.targetChordIndex < this.chordProgression.length) {
+            this.fillSlotWithRest(this.targetChordIndex);
+            this.clearSlotSelection();
+        } else {
+            this.showStatus('No slot selected. Click an empty slot first, then use this button.');
+        }
+    }
+
+    /**
+     * Select the next empty slot
+     */
+    selectNextEmptySlot() {
+        const currentIndex = this.targetChordIndex !== null ? this.targetChordIndex : -1;
+        let nextIndex = currentIndex + 1;
+        
+        // Find next empty slot
+        while (nextIndex < this.chordProgression.length) {
+            if (this.chordProgression[nextIndex].isEmpty) {
+                this.selectSlotForPiano(nextIndex);
+                return;
+            }
+            nextIndex++;
+        }
+        
+        // If no empty slots found after current, wrap to beginning
+        nextIndex = 0;
+        while (nextIndex <= currentIndex && nextIndex < this.chordProgression.length) {
+            if (this.chordProgression[nextIndex].isEmpty) {
+                this.selectSlotForPiano(nextIndex);
+                return;
+            }
+            nextIndex++;
+        }
+        
+        this.showStatus('No empty slots found');
+    }
+
+    /**
+     * Select the previous empty slot
+     */
+    selectPreviousEmptySlot() {
+        const currentIndex = this.targetChordIndex !== null ? this.targetChordIndex : this.chordProgression.length;
+        let prevIndex = currentIndex - 1;
+        
+        // Find previous empty slot
+        while (prevIndex >= 0) {
+            if (this.chordProgression[prevIndex].isEmpty) {
+                this.selectSlotForPiano(prevIndex);
+                return;
+            }
+            prevIndex--;
+        }
+        
+        // If no empty slots found before current, wrap to end
+        prevIndex = this.chordProgression.length - 1;
+        while (prevIndex >= currentIndex && prevIndex >= 0) {
+            if (this.chordProgression[prevIndex].isEmpty) {
+                this.selectSlotForPiano(prevIndex);
+                return;
+            }
+            prevIndex--;
+        }
+        
+        this.showStatus('No empty slots found');
+    }
+
+    /**
+     * Go to specific measure and beat
+     */
+    gotoSpecificSlot() {
+        const measureInput = document.getElementById('goto-measure');
+        const beatInput = document.getElementById('goto-beat');
+        
+        const measureNum = parseInt(measureInput.value);
+        const beatNum = parseInt(beatInput.value);
+        
+        if (isNaN(measureNum) || measureNum < 1) {
+            this.showStatus('Please enter a valid measure number');
+            return;
+        }
+        
+        const chordsPerMeasure = this.timeSignature;
+        const maxBeat = chordsPerMeasure;
+        
+        if (isNaN(beatNum) || beatNum < 1 || beatNum > maxBeat) {
+            this.showStatus(`Please enter a valid beat number (1-${maxBeat} for ${chordsPerMeasure}/4 time)`);
+            return;
+        }
+        
+        // Convert to global index
+        const globalIndex = (measureNum - 1) * chordsPerMeasure + (beatNum - 1);
+        
+        if (globalIndex >= this.chordProgression.length) {
+            this.showStatus(`Slot not found. Current progression has ${this.chordProgression.length} slots.`);
+            return;
+        }
+        
+        // Select the slot
+        this.selectSlotForPiano(globalIndex);
+        
+        // Clear the inputs
+        measureInput.value = '';
+        beatInput.value = '';
     }
 
     // ...existing code...

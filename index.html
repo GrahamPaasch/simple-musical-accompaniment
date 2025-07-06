@@ -97,9 +97,25 @@
                     <div class="chord-builder">
                         <label>Selected Notes:</label>
                         <div id="selected-notes" class="selected-notes"></div>
-                        <button id="play-selected">Play Selected</button>
-                        <button id="clear-selection">Clear</button>
-                        <button id="add-to-progression">Add to Progression</button>
+                        <div id="selected-slot-display" class="selected-slot-display" style="display: none;">
+                            <div class="slot-selection-info">
+                                <span id="slot-info-text">No slot selected</span>
+                                <div class="slot-navigation">
+                                    <button id="prev-empty-slot" title="Select previous empty slot">⬅️</button>
+                                    <button id="next-empty-slot" title="Select next empty slot">➡️</button>
+                                    <input type="number" id="goto-measure" min="1" placeholder="M" title="Go to measure">
+                                    <input type="number" id="goto-beat" min="1" max="8" placeholder="B" title="Go to beat">
+                                    <button id="goto-slot" title="Go to specific measure/beat">Go</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="piano-action-buttons">
+                            <button id="play-selected">Play Selected</button>
+                            <button id="clear-selection">Clear Notes</button>
+                            <button id="add-to-progression">Add to Slot</button>
+                            <button id="add-rest" title="Add a rest to selected slot">⏸️ Rest</button>
+                            <button id="clear-slot-selection" title="Clear slot selection">❌ Clear Slot</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -115,7 +131,7 @@
                         </div>
                         <div class="progression-actions">
                             <div class="measure-setup">
-                                <input type="number" id="measure-count" min="1" max="32" value="4" title="Number of measures">
+                                <input type="number" id="measure-count" min="1" value="4" title="Number of measures">
                                 <button id="create-measures" class="action-btn" title="Create empty measures">📐</button>
                             </div>
                             <button id="transpose-down" class="action-btn" title="Transpose down">♭</button>
