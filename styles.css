@@ -173,6 +173,33 @@ section h2 {
     flex-wrap: wrap;
 }
 
+.measure-setup {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.measure-setup input[type="number"] {
+    width: 50px;
+    padding: 4px 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    text-align: center;
+    background: white;
+    color: #495057;
+}
+
+.measure-setup input[type="number"]:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
 .action-btn {
     padding: 6px 12px;
     background: #6c757d;
