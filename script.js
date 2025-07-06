@@ -27,7 +27,6 @@ class MusicalAccompanist {
         this.draggedFromIndex = null;
         this.contextChordIndex = null; // For context menu
         this.editingChordIndex = null; // For chord editing
-        this.showChordAnalysis = false; // For progression analysis
         this.showChordNotes = false; // For showing notes above chords
         this.showChordFunctions = false; // For showing Roman numeral functions
         
@@ -177,10 +176,6 @@ class MusicalAccompanist {
 
         document.getElementById('transpose-down').addEventListener('click', () => {
             this.transposeProgression(-1);
-        });
-
-        document.getElementById('analyze-progression').addEventListener('click', () => {
-            this.analyzeProgression();
         });
 
         document.getElementById('export-progression').addEventListener('click', () => {
@@ -922,7 +917,7 @@ class MusicalAccompanist {
                     if (this.showChordFunctions) {
                         const functionDiv = document.createElement('div');
                         functionDiv.className = 'chord-function';
-                        functionDiv.textContent = this.chordToRomanNumeral(chord);
+                        functionDiv.textContent = chord.name; // Simple display without analysis
                         chordElement.appendChild(functionDiv);
                     }
                 }
@@ -1970,199 +1965,6 @@ class MusicalAccompanist {
     }
 
     /**
-     * Analyze the current progression
-     */
-    analyzeProgression() {
-        if (this.chordProgression.length === 0) {
-            this.showStatus('No progression to analyze');
-            return;
-        }
-
-        const analysis = this.getProgressionAnalysis();
-        this.displayAnalysis(analysis);
-        this.toggleAnalysisDisplay();
-    }
-
-    /**
-     * Get analysis data for the current progression
-     */
-    getProgressionAnalysis() {
-        const chords = this.chordProgression.filter(chord => !chord.isRest);
-        const totalDuration = this.calculateProgressionDuration();
-        
-        return {
-            chordCount: chords.length,
-            totalDuration: totalDuration,
-            key: this.currentKey,
-            timeSignature: this.timeSignature,
-            romanNumerals: this.getRomanNumeralAnalysis(chords),
-            chordTypes: this.getChordTypesAnalysis(chords),
-            commonProgressions: this.identifyCommonProgressions(chords)
-        };
-    }
-
-    /**
-     * Get Roman numeral analysis for chords
-     */
-    getRomanNumeralAnalysis(chords) {
-        return chords.map(chord => {
-            if (chord.isRomanNumeral) {
-                return chord.name;
-            }
-            return this.chordToRomanNumeral(chord);
-        }).join(' - ');
-    }
-
-    /**
-     * Convert chord to Roman numeral based on current key
-     */
-    chordToRomanNumeral(chord) {
-        // Simple implementation - this could be more sophisticated
-        const root = chord.notes[0].replace(/\d+$/, '');
-        const keyRoot = this.currentKey.replace(/m$/, '');
-        
-        const majorScale = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-        const keyIndex = majorScale.indexOf(keyRoot);
-        const chordIndex = majorScale.indexOf(root);
-        
-        if (keyIndex === -1 || chordIndex === -1) return '?';
-        
-        const degree = ((chordIndex - keyIndex + 7) % 7) + 1;
-        const romanNumerals = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
-        
-        return romanNumerals[degree - 1] || '?';
-    }
-
-    /**
-     * Analyze chord types in the progression
-     */
-    getChordTypesAnalysis(chords) {
-        const types = {};
-        chords.forEach(chord => {
-            const type = this.getChordType(chord);
-            types[type] = (types[type] || 0) + 1;
-        });
-        
-        return Object.entries(types)
-            .map(([type, count]) => `${type}: ${count}`)
-            .join(', ');
-    }
-
-    /**
-     * Get chord type (major, minor, etc.)
-     */
-    getChordType(chord) {
-        if (chord.isSingleNote) return 'single note';
-        if (chord.isCustom) return 'custom';
-        if (chord.notes.length === 3) {
-            // Simple major/minor detection
-            const intervals = this.getChordIntervals(chord.notes);
-            if (intervals.includes(4)) return 'major';
-            if (intervals.includes(3)) return 'minor';
-        }
-        return 'other';
-    }
-
-    /**
-     * Get intervals between chord notes
-     */
-    getChordIntervals(notes) {
-        const frequencies = notes.map(note => Tone.Frequency(note).toMidi());
-        const intervals = [];
-        for (let i = 1; i < frequencies.length; i++) {
-            intervals.push(frequencies[i] - frequencies[0]);
-        }
-        return intervals;
-    }
-
-    /**
-     * Identify common chord progressions
-     */
-    identifyCommonProgressions(chords) {
-        const romanNumerals = chords.map(chord => this.chordToRomanNumeral(chord));
-        const progressionString = romanNumerals.join('-');
-        
-        const commonPatterns = {
-            'I-V-vi-IV': 'I-V-vi-IV (Pop progression)',
-            'vi-IV-I-V': 'vi-IV-I-V (Circle progression)',
-            'I-IV-V-I': 'I-IV-V-I (Classic cadence)',
-            'ii-V-I': 'ii-V-I (Jazz cadence)',
-            'I-vi-ii-V': 'I-vi-ii-V (Circle of fifths)'
-        };
-        
-        for (const [pattern, name] of Object.entries(commonPatterns)) {
-            if (progressionString.includes(pattern)) {
-                return name;
-            }
-        }
-        
-        return 'Custom progression';
-    }
-
-    /**
-     * Calculate total duration of progression
-     */
-    calculateProgressionDuration() {
-        const beatsPerChord = 4 / this.timeSignature; // Assume whole notes
-        const totalBeats = this.chordProgression.length * beatsPerChord;
-        const totalSeconds = (totalBeats * 60) / this.tempo;
-        
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = Math.floor(totalSeconds % 60);
-        
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }
-
-    /**
-     * Display analysis results
-     */
-    displayAnalysis(analysis) {
-        const analysisContent = document.getElementById('analysis-content');
-        analysisContent.innerHTML = `
-            <div class="analysis-row">
-                <span class="analysis-label">Chords:</span>
-                <span class="analysis-value">${analysis.chordCount}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Duration:</span>
-                <span class="analysis-value">${analysis.totalDuration}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Key:</span>
-                <span class="analysis-value">${analysis.key}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Time:</span>
-                <span class="analysis-value">${analysis.timeSignature}/4</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Analysis:</span>
-                <span class="analysis-value">${analysis.romanNumerals}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Types:</span>
-                <span class="analysis-value">${analysis.chordTypes}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Pattern:</span>
-                <span class="analysis-value">${analysis.commonProgressions}</span>
-            </div>
-        `;
-    }
-
-    /**
-     * Toggle analysis display
-     */
-    toggleAnalysisDisplay() {
-        const analysisDiv = document.getElementById('progression-analysis');
-        const isVisible = analysisDiv.style.display !== 'none';
-        analysisDiv.style.display = isVisible ? 'none' : 'block';
-        
-        const analyzeBtn = document.getElementById('analyze-progression');
-        analyzeBtn.classList.toggle('active', !isVisible);
-    }
-
-    /**
      * Export progression as JSON
      */
     exportProgression() {
@@ -2681,11 +2483,6 @@ class MusicalAccompanist {
                 const isMinor = selectedKey.includes('m');
                 const keyType = isMinor ? 'Minor' : 'Major';
                 this.showStatus(`Key set to: ${selectedKey} ${keyType}`);
-                
-                // Update any existing progression analysis
-                if (this.showChordAnalysis) {
-                    this.analyzeProgression();
-                }
             });
             
             // Add hover effects

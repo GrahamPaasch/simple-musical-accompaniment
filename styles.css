@@ -1461,46 +1461,6 @@ footer {
     color: white;
 }
 
-/* Progression Analysis */
-.progression-analysis {
-    margin-top: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.progression-analysis h3 {
-    margin: 0 0 10px 0;
-    color: #495057;
-    font-size: 1.1rem;
-}
-
-.analysis-content {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.analysis-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.analysis-label {
-    font-weight: 600;
-    color: #495057;
-    min-width: 80px;
-}
-
-.analysis-value {
-    color: #6c757d;
-    font-family: 'Courier New', monospace;
-}
-
 /* Enhanced chord items with more context */
 .chord-item {
     position: relative;

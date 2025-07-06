@@ -172,7 +172,6 @@ The built-in piano keyboard allows you to:
 - **Measure-Based Display**: Chords are organized into measures with clear visual separation
 - **Right-click Context Menu**: Right-click on chords for edit, duplicate, substitute, and delete options
 - **Double-click Editing**: Double-click any chord to edit it directly
-- **Chord Analysis**: Analyze progressions to see Roman numeral functions and common patterns
 - **Transpose Tools**: Transpose entire progressions up or down by semitones
 - **Import/Export**: Save and load progressions as JSON files or text format
 - **Chord Substitution**: Get intelligent chord substitution suggestions
