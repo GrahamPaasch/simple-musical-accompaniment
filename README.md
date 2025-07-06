@@ -14,12 +14,7 @@ A web-based musical accompanist tool for practice and learning, featuring custom
 - **Time Signatures**: Support for 2/4, 3/4, 4/4, 6/8, and 8/8 time
 - **Drag and Drop**: Rearrange chords by dragging them to new positions
 
-### 🎼 **Tuning System**
-- **Equal Temperament**: Standard 12-tone equal temperament tuning
-- **Just Intonation**: Pure harmonic ratios for more consonant intervals
-- **Real-time Switching**: Toggle between tuning systems while playing
-
-### 🎛️ **Input Methods**
+### ️ **Input Methods**
 - **Text Input**: Enter chord progressions using simple text notation
 - **Preset Library**: Quick access to common progressions and drones
 - **Piano Keyboard**: Visual piano interface for building custom chords
@@ -216,7 +211,7 @@ This creates more consonant, "in-tune" harmonies that are easier on the ear and 
 ### For Instrument Practice
 1. **Scale Practice**: Use drone modes to practice scales against a tonic
 2. **Chord Practice**: Play along with progressions to develop timing
-3. **Ear Training**: Toggle between tuning modes to hear differences
+3. **Ear Training**: Practice identifying chord progressions and intervals
 
 ### For Singing
 1. **Pitch Reference**: Use drones to establish key center
@@ -269,7 +264,6 @@ simple-musical-accompaniment/
 ### Customization
 - **Add New Chords**: Extend the `chordPatterns` object in `script.js`
 - **Create Presets**: Add entries to the `presets` object
-- **Modify Tuning**: Adjust the `applyJustIntonation` function
 - **Change Styling**: Edit `styles.css` for visual customization
 
 ## Contributing
@@ -278,7 +272,7 @@ This is an open-source project. Feel free to:
 - Report bugs and request features
 - Submit pull requests with improvements
 - Create additional presets or chord patterns
-- Improve the tuning algorithms
+- Improve the audio synthesis and timing
 
 ## License
 

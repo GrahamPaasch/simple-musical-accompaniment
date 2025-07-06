@@ -15,7 +15,6 @@ class MusicalAccompanist {
         this.transport = null;
         this.tempo = 120;
         this.volume = 0.5;
-        this.tuningMode = 'equal';
         this.loopMode = true;
         this.metronomeEnabled = false;
         this.selectedNotes = []; // For piano keyboard
@@ -91,11 +90,6 @@ class MusicalAccompanist {
             if (this.synth) {
                 this.synth.volume.value = this.volumeToDb(this.volume);
             }
-        });
-
-        document.getElementById('tuning').addEventListener('change', (e) => {
-            this.tuningMode = e.target.value;
-            this.showStatus(`Tuning mode: ${this.tuningMode === 'equal' ? 'Equal Temperament' : 'Just Intonation'}`);
         });
 
         document.getElementById('time-signature').addEventListener('change', (e) => {
@@ -1666,7 +1660,7 @@ class MusicalAccompanist {
             this.showStatus('Rest');
             document.getElementById('current-chord-display').textContent = 'REST';
         } else {
-            // Get frequencies for current chord (with tuning applied)
+            // Get frequencies for current chord
             const frequencies = this.getChordFrequencies(currentChord);
             
             // Play the chord
@@ -1712,68 +1706,17 @@ class MusicalAccompanist {
     }
 
     /**
-     * Get frequencies for a chord with tuning applied
+     * Get frequencies for a chord
      */
     getChordFrequencies(chord) {
         const frequencies = [];
         
         for (const note of chord.notes) {
             let frequency = Tone.Frequency(note).toFrequency();
-            
-            // Apply just intonation if enabled
-            if (this.tuningMode === 'just') {
-                frequency = this.applyJustIntonation(note, chord.name, frequency);
-            }
-            
             frequencies.push(frequency);
         }
         
         return frequencies;
-    }
-
-    /**
-     * Apply just intonation tuning
-     */
-    applyJustIntonation(note, chordName, frequency) {
-        // Simple just intonation implementation
-        // This is a basic version - in practice, you'd want more sophisticated tuning
-        const noteName = note.replace(/\d+/, '');
-        const chordRoot = chordName.replace(/[^A-G#b]/, '');
-        
-        // Apply just intonation ratios for common intervals
-        const justRatios = {
-            'unison': 1,
-            'major_third': 5/4,
-            'perfect_fifth': 3/2,
-            'minor_third': 6/5,
-            'seventh': 16/9
-        };
-        
-        // This is a simplified implementation
-        // In a full implementation, you'd calculate the exact interval relationships
-        if (noteName !== chordRoot) {
-            // Apply slight detuning for just intonation effect
-            const cents = this.getJustIntonationCents(noteName, chordRoot);
-            frequency *= Math.pow(2, cents / 1200);
-        }
-        
-        return frequency;
-    }
-
-    /**
-     * Get cents adjustment for just intonation
-     */
-    getJustIntonationCents(note, root) {
-        // Simplified cents adjustments for just intonation
-        const adjustments = {
-            'E': -14, // Major third, 14 cents flat
-            'F#': -2, // Perfect fifth, 2 cents sharp
-            'G': -2,  // Perfect fifth, 2 cents sharp
-            'A': -2,  // Perfect fifth, 2 cents sharp
-            'B': -2   // Perfect fifth, 2 cents sharp
-        };
-        
-        return adjustments[note] || 0;
     }
 
     /**
@@ -2251,7 +2194,6 @@ class MusicalAccompanist {
             chords: this.chordProgression,
             tempo: this.tempo,
             timeSignature: this.timeSignature,
-            tuningMode: this.tuningMode,
             exportedAt: new Date().toISOString()
         };
 
@@ -2288,7 +2230,6 @@ class MusicalAccompanist {
             this.chordProgression = importData.chords;
             if (importData.tempo) this.tempo = importData.tempo;
             if (importData.timeSignature) this.timeSignature = importData.timeSignature;
-            if (importData.tuningMode) this.tuningMode = importData.tuningMode;
 
             // Update UI
             this.displayChords();
