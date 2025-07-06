@@ -121,11 +121,6 @@ class MusicalAccompanist {
             this.countInEnabled = e.target.checked;
         });
 
-        // Chord input
-        document.getElementById('parse-chords').addEventListener('click', () => {
-            this.parseCustomChords();
-        });
-
         // Playback controls
         document.getElementById('play-btn').addEventListener('click', () => {
             this.startPlayback();
@@ -137,13 +132,6 @@ class MusicalAccompanist {
 
         document.getElementById('stop-btn').addEventListener('click', () => {
             this.stopPlayback();
-        });
-
-        // Handle Enter key in chord input
-        document.getElementById('chord-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                this.parseCustomChords();
-            }
         });
 
         // Piano keyboard events
@@ -678,25 +666,6 @@ class MusicalAccompanist {
         };
 
         return presets[presetName] || null;
-    }
-
-    /**
-     * Parse custom chord input from textarea
-     */
-    parseCustomChords() {
-        const input = document.getElementById('chord-input').value.trim();
-        if (!input) {
-            this.showStatus('Please enter some chords');
-            return;
-        }
-
-        try {
-            this.chordProgression = this.parseChordString(input);
-            this.displayChords();
-            this.showStatus(`Parsed ${this.chordProgression.length} chords`);
-        } catch (error) {
-            this.showStatus('Error parsing chords: ' + error.message);
-        }
     }
 
     /**
@@ -1497,15 +1466,6 @@ class MusicalAccompanist {
         // Update display
         this.displayChords();
         
-        // Update chord input text
-        const chordInput = document.getElementById('chord-input');
-        const currentText = chordInput.value.trim();
-        if (currentText) {
-            chordInput.value = currentText + ' ' + chordName;
-        } else {
-            chordInput.value = chordName;
-        }
-        
         this.showStatus(`Added ${chordName} to progression`);
     }
 
@@ -1552,9 +1512,6 @@ class MusicalAccompanist {
         
         // Clear the progression array
         this.chordProgression = [];
-        
-        // Clear the text input
-        document.getElementById('chord-input').value = '';
         
         // Update the display
         this.displayChords();
@@ -2236,30 +2193,6 @@ class MusicalAccompanist {
         } else {
             this.showStatus('No chords to delete in this measure');
         }
-    }
-
-    /**
-     * Update the chord input textarea to reflect the current progression
-     */
-    updateChordInputFromProgression() {
-        const chordInput = document.getElementById('chord-input');
-        const chordNames = this.chordProgression.map(chord => {
-            if (chord.isRest) {
-                return '-';
-            }
-            return chord.name;
-        });
-        
-        // Group by measures and add bar lines
-        const chordsPerMeasure = this.timeSignature;
-        const measuredChords = [];
-        
-        for (let i = 0; i < chordNames.length; i += chordsPerMeasure) {
-            const measureChords = chordNames.slice(i, i + chordsPerMeasure);
-            measuredChords.push(measureChords.join(' '));
-        }
-        
-        chordInput.value = measuredChords.join(' | ');
     }
 
     /**
