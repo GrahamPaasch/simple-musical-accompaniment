@@ -269,6 +269,17 @@ small {
     background: #5a2d8c;
 }
 
+.preset-chord[data-is-rest="true"] {
+    background: #6c757d;
+    font-style: italic;
+    opacity: 0.9;
+}
+
+.preset-chord[data-is-rest="true"]:hover {
+    background: #5a6268;
+    opacity: 1;
+}
+
 .preset-progression {
     background: #28a745;
     min-width: 70px;
@@ -660,7 +671,7 @@ small {
 .piano-keyboard {
     position: relative;
     height: 120px;
-    max-width: 500px;
+    max-width: 720px;
     margin: 20px auto;
     background: #333;
     border-radius: 5px;
@@ -703,6 +714,13 @@ small {
 .key.white:nth-child(5) { left: 200px; }
 .key.white:nth-child(6) { left: 250px; }
 .key.white:nth-child(7) { left: 300px; }
+.key.white:nth-child(8) { left: 350px; }
+.key.white:nth-child(9) { left: 400px; }
+.key.white:nth-child(10) { left: 450px; }
+.key.white:nth-child(11) { left: 500px; }
+.key.white:nth-child(12) { left: 550px; }
+.key.white:nth-child(13) { left: 600px; }
+.key.white:nth-child(14) { left: 650px; }
 
 .key.black {
     width: 30px;
@@ -714,6 +732,18 @@ small {
     z-index: 2;
     font-size: 10px;
 }
+
+/* Black key positioning for two octaves */
+.key.black[data-note="C#4"] { left: 35px; }
+.key.black[data-note="D#4"] { left: 85px; }
+.key.black[data-note="F#4"] { left: 185px; }
+.key.black[data-note="G#4"] { left: 235px; }
+.key.black[data-note="A#4"] { left: 285px; }
+.key.black[data-note="C#5"] { left: 385px; }
+.key.black[data-note="D#5"] { left: 435px; }
+.key.black[data-note="F#5"] { left: 535px; }
+.key.black[data-note="G#5"] { left: 585px; }
+.key.black[data-note="A#5"] { left: 635px; }
 
 .key:hover {
     transform: scale(0.98);
@@ -1130,6 +1160,11 @@ footer {
     .key.black[data-note="F#4"] { left: 148px; }
     .key.black[data-note="G#4"] { left: 188px; }
     .key.black[data-note="A#4"] { left: 228px; }
+    .key.black[data-note="C#5"] { left: 378px; }
+    .key.black[data-note="D#5"] { left: 418px; }
+    .key.black[data-note="F#5"] { left: 498px; }
+    .key.black[data-note="G#5"] { left: 538px; }
+    .key.black[data-note="A#5"] { left: 578px; }
     
     .chord-builder button {
         display: block;

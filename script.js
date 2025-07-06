@@ -2499,9 +2499,10 @@ class MusicalAccompanist {
         presetChordElements.forEach(element => {
             element.addEventListener('dragstart', (e) => {
                 const chordName = e.target.dataset.chordName;
-                const chordNotes = e.target.dataset.chordNotes.split(',');
+                const chordNotes = e.target.dataset.chordNotes ? e.target.dataset.chordNotes.split(',') : [];
                 const isDrone = e.target.dataset.isDrone === 'true';
                 const isSingle = e.target.dataset.isSingle === 'true';
+                const isRest = e.target.dataset.isRest === 'true';
                 
                 // Create a chord object for dragging
                 const draggedChord = {
@@ -2510,7 +2511,8 @@ class MusicalAccompanist {
                     duration: '1n',
                     isDrone: isDrone,
                     isSingleNote: isSingle,
-                    isCustom: !isDrone && !isSingle
+                    isRest: isRest,
+                    isCustom: !isDrone && !isSingle && !isRest
                 };
                 
                 this.draggedChord = draggedChord;
