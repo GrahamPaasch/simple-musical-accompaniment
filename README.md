@@ -9,7 +9,6 @@ A web-based musical accompanist tool for practice and learning, featuring custom
 - **Drone Mode**: Continuous pitch playback for scale practice
 - **Tempo Control**: Adjustable BPM from 40-200 with real-time updates
 - **Volume Control**: Independent volume adjustment for accompaniment
-- **Count-in**: Optional 4-beat count-in before playback starts
 - **Loop Mode**: Automatic looping of chord progressions
 - **Metronome**: Optional click track for rhythmic reference
 - **Time Signatures**: Support for 2/4, 3/4, 4/4, 6/8, and 8/8 time
@@ -190,7 +189,6 @@ This creates more consonant, "in-tune" harmonies that are easier on the ear and 
 - Uses Web Audio API for precise timing
 - Chord changes are scheduled in advance to avoid timing drift
 - Metronome clicks are synchronized with the main beat
-- Count-in provides clear rhythmic entry point
 
 ## Technical Details
 
@@ -223,7 +221,7 @@ This creates more consonant, "in-tune" harmonies that are easier on the ear and 
 ### For Singing
 1. **Pitch Reference**: Use drones to establish key center
 2. **Harmony Practice**: Sing harmonies over chord progressions
-3. **Rhythm Training**: Use metronome and count-in for timing
+3. **Rhythm Training**: Use metronome for timing
 
 ### For Composition
 1. **Chord Exploration**: Test different progressions quickly

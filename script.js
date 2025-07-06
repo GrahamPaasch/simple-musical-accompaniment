@@ -18,7 +18,6 @@ class MusicalAccompanist {
         this.tuningMode = 'equal';
         this.loopMode = true;
         this.metronomeEnabled = false;
-        this.countInEnabled = true;
         this.selectedNotes = []; // For piano keyboard
         this.timeSignature = 4; // Default to 4/4 time
         this.draggedFromIndex = null;
@@ -111,10 +110,6 @@ class MusicalAccompanist {
 
         document.getElementById('loop').addEventListener('change', (e) => {
             this.loopMode = e.target.checked;
-        });
-
-        document.getElementById('count-in').addEventListener('change', (e) => {
-            this.countInEnabled = e.target.checked;
         });
 
         // Playback controls
@@ -1640,11 +1635,6 @@ class MusicalAccompanist {
             // Set tempo
             Tone.Transport.bpm.value = this.tempo;
             
-            // Start with count-in if enabled
-            if (this.countInEnabled && !this.chordProgression[0].isDrone) {
-                await this.playCountIn();
-            }
-            
             // Start the main progression
             this.schedulePlayback();
             
@@ -1654,37 +1644,6 @@ class MusicalAccompanist {
             this.showStatus('Error starting playback');
             this.stopPlayback();
         }
-    }
-
-    /**
-     * Play count-in beats
-     */
-    async playCountIn() {
-        return new Promise((resolve) => {
-            this.showStatus('Count-in...');
-            let count = 0;
-            const beats = 4; // Two bars count-in
-            
-            const playBeat = () => {
-                // Play click sound
-                if (this.metronome) {
-                    this.metronome.triggerAttackRelease('C6', '8n');
-                }
-                
-                // Update display
-                document.getElementById('current-chord-display').textContent = `${count + 1}`;
-                
-                count++;
-                if (count < beats) {
-                    setTimeout(playBeat, 60000 / this.tempo); // Beat interval
-                } else {
-                    document.getElementById('current-chord-display').textContent = '';
-                    setTimeout(resolve, 100); // Small delay before starting
-                }
-            };
-            
-            playBeat();
-        });
     }
 
     /**
