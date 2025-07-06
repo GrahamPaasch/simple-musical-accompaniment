@@ -19,7 +19,6 @@ class MusicalAccompanist {
         this.loopMode = true;
         this.metronomeEnabled = false;
         this.countInEnabled = true;
-        this.currentKey = 'C';
         this.selectedNotes = []; // For piano keyboard
         this.timeSignature = 4; // Default to 4/4 time
         this.draggedFromIndex = null;
@@ -99,9 +98,6 @@ class MusicalAccompanist {
             this.tuningMode = e.target.value;
             this.showStatus(`Tuning mode: ${this.tuningMode === 'equal' ? 'Equal Temperament' : 'Just Intonation'}`);
         });
-
-        // Circle of Fifths key selection
-        this.setupCircleOfFifths();
 
         document.getElementById('time-signature').addEventListener('change', (e) => {
             this.timeSignature = parseInt(e.target.value);
@@ -703,11 +699,6 @@ class MusicalAccompanist {
             };
         }
 
-        // Check if it's a Roman numeral chord (I, IV, V, vi, ii, etc.)
-        if (this.isRomanNumeral(chordName)) {
-            return this.parseRomanNumeral(chordName);
-        }
-
         // Check if it's a custom chord using note-dash-note syntax
         if (chordName.includes('-') && chordName !== '-') {
             return this.parseCustomChord(chordName);
@@ -855,14 +846,6 @@ class MusicalAccompanist {
                         chordElement.classList.add('single-note');
                     } else if (chord.isCustom) {
                         chordElement.classList.add('custom-chord');
-                    } else if (chord.isRomanNumeral) {
-                        // Check if it's a number (1-7) or actual Roman numeral
-                        const isNumber = /^[1-7]/.test(chord.name);
-                        if (isNumber) {
-                            chordElement.classList.add('scale-degree');
-                        } else {
-                            chordElement.classList.add('roman-numeral');
-                        }
                     }
                     
                     if (chord.edited) {
@@ -1646,201 +1629,6 @@ class MusicalAccompanist {
     }
 
     /**
-     * Check if a chord name represents a Roman numeral or scale degree number
-     */
-    isRomanNumeral(chordName) {
-        // Match Roman numerals: I, II, III, IV, V, VI, VII (uppercase = major)
-        // i, ii, iii, iv, v, vi, vii (lowercase = minor)
-        // Also support 7th chords like I7, V7, ii7, etc.
-        const romanPattern = /^(I{1,3}|IV|V|VI{1,2}|VII|i{1,3}|iv|v|vi{1,2}|vii)(7|maj7|m7|dim7|dim|aug|\+)?$/i;
-        
-        // Also match scale degree numbers: 1, 2, 3, 4, 5, 6, 7
-        const numberPattern = /^[1-7](7|maj7|m7|dim7|dim|aug|\+)?$/;
-        
-        return romanPattern.test(chordName) || numberPattern.test(chordName);
-    }
-
-    /**
-     * Parse a Roman numeral chord into notes based on the current key
-     */
-    parseRomanNumeral(romanChord) {
-        const originalChord = romanChord;
-        let chordQuality = '';
-        let baseRoman = romanChord;
-        
-        // Check if it's a number (1-7) or Roman numeral
-        const isNumber = /^[1-7]/.test(romanChord);
-        
-        // Extract chord quality (7, maj7, m7, dim7, dim, aug, +)
-        const qualityMatch = romanChord.match(/(7|maj7|m7|dim7|dim|aug|\+)$/i);
-        if (qualityMatch) {
-            chordQuality = qualityMatch[1].toLowerCase();
-            baseRoman = romanChord.replace(qualityMatch[1], '');
-        }
-        
-        let scaleDegree;
-        let isMajor;
-        
-        if (isNumber) {
-            // Handle number notation (1-7)
-            scaleDegree = parseInt(baseRoman);
-            
-            // In major keys: 1, 4, 5 are major; 2, 3, 6 are minor; 7 is diminished
-            const majorKeyDegrees = [1, 4, 5];
-            const minorKeyDegrees = [2, 3, 6];
-            const diminishedDegrees = [7];
-            
-            if (majorKeyDegrees.includes(scaleDegree)) {
-                isMajor = true;
-            } else if (minorKeyDegrees.includes(scaleDegree)) {
-                isMajor = false;
-            } else if (diminishedDegrees.includes(scaleDegree)) {
-                isMajor = false; // We'll handle diminished separately
-            }
-        } else {
-            // Handle Roman numeral notation
-            // Convert Roman numeral to scale degree
-            const romanToNumber = {
-                'I': 1, 'i': 1,
-                'II': 2, 'ii': 2,
-                'III': 3, 'iii': 3,
-                'IV': 4, 'iv': 4,
-                'V': 5, 'v': 5,
-                'VI': 6, 'vi': 6,
-                'VII': 7, 'vii': 7
-            };
-            
-            scaleDegree = romanToNumber[baseRoman];
-            if (!scaleDegree) {
-                console.warn(`Unknown Roman numeral: ${baseRoman}`);
-                return null;
-            }
-            
-            // Determine if it's major or minor based on case
-            const isUpperCase = baseRoman === baseRoman.toUpperCase();
-            isMajor = isUpperCase;
-            
-            // In major keys, adjust based on scale degree
-            if (this.currentKey) {
-                const majorKeyDegrees = [1, 4, 5]; // I, IV, V are major
-                const minorKeyDegrees = [2, 3, 6]; // ii, iii, vi are minor
-                const diminishedDegrees = [7]; // vii is diminished
-                
-                if (majorKeyDegrees.includes(scaleDegree)) {
-                    isMajor = true;
-                } else if (minorKeyDegrees.includes(scaleDegree)) {
-                    isMajor = false;
-                } else if (diminishedDegrees.includes(scaleDegree)) {
-                    isMajor = false; // We'll handle diminished separately
-                }
-            }
-            
-            // Override with explicit case if provided
-            if (!isUpperCase) {
-                isMajor = false;
-            }
-        }
-        
-        // Get the root note for this scale degree
-        const rootNote = this.getScaleDegreeNote(scaleDegree, this.currentKey);
-        if (!rootNote) {
-            console.warn(`Could not determine root note for scale degree ${scaleDegree} in key ${this.currentKey}`);
-            return null;
-        }
-        
-        // Build the chord based on quality
-        const notes = this.buildChordFromRoot(rootNote, isMajor, chordQuality, scaleDegree);
-        
-        return {
-            name: originalChord,
-            notes: notes,
-            duration: '1n',
-            isRomanNumeral: true,
-            scaleDegree: scaleDegree,
-            rootNote: rootNote
-        };
-    }
-
-    /**
-     * Get the note name for a scale degree in a given key
-     */
-    getScaleDegreeNote(scaleDegree, key) {
-        if (!key) key = 'C'; // Default to C major
-        
-        // Major scale intervals in semitones from root
-        const majorScaleIntervals = [0, 2, 4, 5, 7, 9, 11];
-        
-        // Convert key to a root note (handle sharps/flats)
-        const keyRoot = this.standardizeNoteName(key).replace(/\d+$/, '');
-        
-        // Get the base note without octave
-        const baseNote = keyRoot.replace(/\d+$/, '');
-        
-        // Calculate the note for this scale degree
-        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const flatNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-        
-        let rootIndex = noteNames.indexOf(baseNote);
-        if (rootIndex === -1) {
-            // Try flat notation
-            rootIndex = flatNames.indexOf(baseNote);
-        }
-        if (rootIndex === -1) {
-            console.warn(`Unknown key: ${key}`);
-            return null;
-        }
-        
-        const scaleIndex = (scaleDegree - 1) % 7;
-        const semitones = majorScaleIntervals[scaleIndex];
-        const noteIndex = (rootIndex + semitones) % 12;
-        
-        // Use sharp or flat notation based on key
-        const useFlats = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'].includes(baseNote);
-        const resultNote = useFlats ? flatNames[noteIndex] : noteNames[noteIndex];
-        
-        return resultNote + '4'; // Add default octave
-    }
-
-    /**
-     * Build a chord from a root note with specified quality
-     */
-    buildChordFromRoot(rootNote, isMajor, quality, scaleDegree) {
-        const baseNote = rootNote.replace(/\d+$/, '');
-        const octave = parseInt(rootNote.match(/\d+$/)?.[0] || '4');
-        
-        // Start with the root
-        const notes = [rootNote];
-        
-        // Get the note names for building intervals
-        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const flatNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-        
-        const baseNoteIndex = noteNames.indexOf(baseNote);
-        if (baseNoteIndex === -1) return notes; // Return just root if unknown
-        
-        // Add third (major or minor)
-        const thirdInterval = isMajor ? 4 : 3; // Major third (4 semitones) or minor third (3 semitones)
-        const thirdIndex = (baseNoteIndex + thirdInterval) % 12;
-        const thirdNote = noteNames[thirdIndex] + octave;
-        notes.push(thirdNote);
-        
-        // Add fifth (perfect fifth - 7 semitones)
-        const fifthIndex = (baseNoteIndex + 7) % 12;
-        const fifthNote = noteNames[fifthIndex] + octave;
-        notes.push(fifthNote);
-        
-        // Add additional intervals for extended chords
-        if (quality === '7' || quality === 'maj7' || quality === 'm7') {
-            const seventhInterval = quality === 'maj7' ? 11 : 10; // Major 7th or minor 7th
-            const seventhIndex = (baseNoteIndex + seventhInterval) % 12;
-            const seventhNote = noteNames[seventhIndex] + octave;
-            notes.push(seventhNote);
-        }
-        
-        return notes;
-    }
-
-    /**
      * Transpose the entire progression up or down by semitones
      */
     transposeProgression(semitones) {
@@ -1903,7 +1691,6 @@ class MusicalAccompanist {
 
         const exportData = {
             chords: this.chordProgression,
-            key: this.currentKey,
             tempo: this.tempo,
             timeSignature: this.timeSignature,
             tuningMode: this.tuningMode,
@@ -1941,7 +1728,6 @@ class MusicalAccompanist {
             }
 
             this.chordProgression = importData.chords;
-            if (importData.key) this.currentKey = importData.key;
             if (importData.tempo) this.tempo = importData.tempo;
             if (importData.timeSignature) this.timeSignature = importData.timeSignature;
             if (importData.tuningMode) this.tuningMode = importData.tuningMode;
@@ -2213,79 +1999,6 @@ class MusicalAccompanist {
         // Update display
         this.displayChords();
         this.showStatus(`Inserted ${chord.name} at position ${adjustedIndex + 1}`);
-    }
-
-    /**
-     * Setup Circle of Fifths interface for key selection
-     */
-    setupCircleOfFifths() {
-        const keySegments = document.querySelectorAll('.key-segment');
-        const selectedKeyDisplay = document.getElementById('selected-key-display');
-        
-        keySegments.forEach(segment => {
-            segment.addEventListener('click', (e) => {
-                e.preventDefault();
-                
-                const selectedKey = segment.dataset.key;
-                
-                // Remove previous selection
-                keySegments.forEach(s => s.classList.remove('selected'));
-                
-                // Add selection to clicked segment
-                segment.classList.add('selected');
-                
-                // Update the key
-                this.currentKey = selectedKey;
-                
-                // Update center display
-                if (selectedKeyDisplay) {
-                    selectedKeyDisplay.textContent = selectedKey;
-                }
-                
-                // Show status
-                const isMinor = selectedKey.includes('m');
-                const keyType = isMinor ? 'Minor' : 'Major';
-                this.showStatus(`Key set to: ${selectedKey} ${keyType}`);
-            });
-            
-            // Add hover effects
-            segment.addEventListener('mouseenter', () => {
-                if (!segment.classList.contains('selected')) {
-                    segment.style.opacity = '0.8';
-                }
-            });
-            
-            segment.addEventListener('mouseleave', () => {
-                if (!segment.classList.contains('selected')) {
-                    segment.style.opacity = '1';
-                }
-            });
-        });
-        
-        // Set initial selection to current key (C Major by default)
-        this.updateCircleOfFifthsSelection();
-    }
-
-    /**
-     * Update the Circle of Fifths to show the current key selection
-     */
-    updateCircleOfFifthsSelection() {
-        const keySegments = document.querySelectorAll('.key-segment');
-        const selectedKeyDisplay = document.getElementById('selected-key-display');
-        
-        // Remove all selections
-        keySegments.forEach(segment => segment.classList.remove('selected'));
-        
-        // Find and select the current key
-        const currentSegment = document.querySelector(`.key-segment[data-key="${this.currentKey}"]`);
-        if (currentSegment) {
-            currentSegment.classList.add('selected');
-        }
-        
-        // Update center display
-        if (selectedKeyDisplay) {
-            selectedKeyDisplay.textContent = this.currentKey;
-        }
     }
 
     // ...existing code...
