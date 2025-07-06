@@ -22,8 +22,6 @@ class MusicalAccompanist {
         this.currentKey = 'C';
         this.selectedNotes = []; // For piano keyboard
         this.timeSignature = 4; // Default to 4/4 time
-        this.draggedChord = null; // For drag and drop
-        this.draggedProgression = null; // For preset progression drag and drop
         this.draggedFromIndex = null;
         this.contextChordIndex = null; // For context menu
         this.editingChordIndex = null; // For chord editing
@@ -249,9 +247,6 @@ class MusicalAccompanist {
         document.getElementById('clear-progression').addEventListener('click', () => {
             this.clearProgression();
         });
-
-        // Setup drag and drop for preset chords
-        this.setupPresetDragAndDrop();
     }
 
     /**
@@ -1863,53 +1858,29 @@ class MusicalAccompanist {
         const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const flatNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
         
-        // Invalid drag state
-        if (!this.draggedChord || this.draggedFromIndex === null) {
-            this.draggedChord = null;
-            this.draggedFromIndex = null;
-            return;
+        const baseNoteIndex = noteNames.indexOf(baseNote);
+        if (baseNoteIndex === -1) return notes; // Return just root if unknown
+        
+        // Add third (major or minor)
+        const thirdInterval = isMajor ? 4 : 3; // Major third (4 semitones) or minor third (3 semitones)
+        const thirdIndex = (baseNoteIndex + thirdInterval) % 12;
+        const thirdNote = noteNames[thirdIndex] + octave;
+        notes.push(thirdNote);
+        
+        // Add fifth (perfect fifth - 7 semitones)
+        const fifthIndex = (baseNoteIndex + 7) % 12;
+        const fifthNote = noteNames[fifthIndex] + octave;
+        notes.push(fifthNote);
+        
+        // Add additional intervals for extended chords
+        if (quality === '7' || quality === 'maj7' || quality === 'm7') {
+            const seventhInterval = quality === 'maj7' ? 11 : 10; // Major 7th or minor 7th
+            const seventhIndex = (baseNoteIndex + seventhInterval) % 12;
+            const seventhNote = noteNames[seventhIndex] + octave;
+            notes.push(seventhNote);
         }
         
-        // Handle dropping on empty slots - this removes the chord from progression
-        const targetElement = e.target;
-        if (targetElement.classList.contains('empty-slot')) {
-            // Remove the chord from its original position
-            this.chordProgression.splice(this.draggedFromIndex, 1);
-            
-            // Update the display
-            this.displayChords();
-            
-            // Show status
-            this.showStatus(`Removed ${this.draggedChord.name} from progression`);
-            
-            // Clear drag state
-            this.draggedChord = null;
-            this.draggedFromIndex = null;
-            return;
-        }
-        
-        // Standard reordering logic
-        // Remove the chord from its original position
-        const draggedChord = this.chordProgression.splice(this.draggedFromIndex, 1)[0];
-        
-        // Adjust target index if necessary (if we removed an item before the target)
-        let adjustedTargetIndex = targetGlobalIndex;
-        if (this.draggedFromIndex < targetGlobalIndex) {
-            adjustedTargetIndex--;
-        }
-        
-        // Insert the chord at the new position
-        this.chordProgression.splice(adjustedTargetIndex, 0, draggedChord);
-        
-        // Update the display
-        this.displayChords();
-        
-        // Show status
-        this.showStatus(`Moved ${draggedChord.name} to position ${adjustedTargetIndex + 1}`);
-        
-        // Clear drag state
-        this.draggedChord = null;
-        this.draggedFromIndex = null;
+        return notes;
     }
 
     /**
@@ -2289,147 +2260,6 @@ class MusicalAccompanist {
         }
         
         chordInput.value = measuredChords.join(' | ');
-    }
-
-    /**
-     * Setup drag and drop functionality for preset chords and progressions
-     */
-    setupPresetDragAndDrop() {
-        // Handle preset chords
-        const presetChordElements = document.querySelectorAll('.preset-chord');
-        
-        presetChordElements.forEach(element => {
-            element.addEventListener('dragstart', (e) => {
-                const chordName = e.target.dataset.chordName;
-                const chordNotes = e.target.dataset.chordNotes ? e.target.dataset.chordNotes.split(',') : [];
-                const isDrone = e.target.dataset.isDrone === 'true';
-                const isSingle = e.target.dataset.isSingle === 'true';
-                const isRest = e.target.dataset.isRest === 'true';
-                
-                // Create a chord object for dragging
-                const draggedChord = {
-                    name: chordName,
-                    notes: chordNotes,
-                    duration: '1n',
-                    isDrone: isDrone,
-                    isSingleNote: isSingle,
-                    isRest: isRest,
-                    isCustom: !isDrone && !isSingle && !isRest
-                };
-                
-                this.draggedChord = draggedChord;
-                this.draggedProgression = null; // Clear any progression drag
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/html', e.target.outerHTML);
-                
-                this.showStatus(`Dragging preset chord: ${chordName}`);
-            });
-            
-            element.addEventListener('dragend', () => {
-                this.draggedChord = null;
-                this.showStatus('');
-            });
-        });
-        
-        // Handle preset progressions
-        const presetProgressionElements = document.querySelectorAll('.preset-progression');
-        
-        presetProgressionElements.forEach(element => {
-            element.addEventListener('dragstart', (e) => {
-                const presetName = e.target.dataset.presetName;
-                const presetChords = e.target.dataset.presetChords.split(',');
-                
-                // Create progression from preset
-                let draggedProgression = [];
-                if (presetName) {
-                    // Get preset data without loading it
-                    const presetData = this.getPresetData(presetName);
-                    if (presetData) {
-                        draggedProgression = [...presetData.chords];
-                    }
-                } else {
-                    // Create from chord list
-                    draggedProgression = presetChords.map(chordName => {
-                        const parsedChord = this.parseChordName(chordName.trim());
-                        return parsedChord || { name: chordName.trim(), notes: [], duration: '1n' };
-                    });
-                }
-                
-                this.draggedProgression = draggedProgression;
-                this.draggedChord = null; // Clear any single chord drag
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/html', e.target.outerHTML);
-                
-                this.showStatus(`Dragging preset progression: ${e.target.textContent}`);
-            });
-            
-            element.addEventListener('dragend', () => {
-                this.draggedProgression = null;
-                this.showStatus('');
-            });
-        });
-        
-        // Enable dropping on the progression area
-        const chordDisplay = document.getElementById('chord-display');
-        if (chordDisplay) {
-            chordDisplay.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                chordDisplay.classList.add('drag-over');
-            });
-            
-            chordDisplay.addEventListener('dragleave', (e) => {
-                if (!chordDisplay.contains(e.relatedTarget)) {
-                    chordDisplay.classList.remove('drag-over');
-                }
-            });
-            
-            chordDisplay.addEventListener('drop', (e) => {
-                e.preventDefault();
-                chordDisplay.classList.remove('drag-over');
-                
-                if (this.draggedProgression) {
-                    // Insert entire progression
-                    this.chordProgression.push(...this.draggedProgression);
-                    this.displayChords();
-                    this.updateChordInputFromProgression();
-                    this.showStatus(`Added preset progression (${this.draggedProgression.length} chords)`);
-                } else if (this.draggedChord) {
-                    // Insert single chord
-                    this.chordProgression.push(this.draggedChord);
-                    this.displayChords();
-                    this.updateChordInputFromProgression();
-                    this.showStatus(`Added ${this.draggedChord.name} to progression`);
-                }
-            });
-        }
-        
-        // Enable dropping on empty slots in the progression
-        const emptySlots = document.querySelectorAll('.empty-slot');
-        emptySlots.forEach(slot => {
-            slot.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-            });
-            
-            slot.addEventListener('drop', (e) => {
-                e.preventDefault();
-                
-                if (this.draggedChord) {
-                    // Insert the dragged chord into the progression
-                    const measureElement = e.target.closest('.measure');
-                    const measureIndex = measureElement ? parseInt(measureElement.dataset.measureIndex) : 0;
-                    const chordIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
-                    
-                    this.insertChordAtIndex(this.draggedChord, measureIndex, chordIndex);
-                    
-                    // Remove visual feedback
-                    document.querySelectorAll('.chord-item').forEach(item => {
-                        item.classList.remove('dragging', 'drag-over');
-                    });
-                }
-            });
-        });
     }
 
     /**

@@ -188,117 +188,6 @@ small {
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Integrated Progression Presets */
-.progression-presets {
-    margin-bottom: 15px;
-    padding: 12px 15px;
-    background: linear-gradient(135deg, #e3f2fd 0%, #f8bbd9 100%);
-    border-radius: 10px;
-    border: 2px solid rgba(0,123,255,0.15);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-}
-
-.progression-presets h3 {
-    margin: 0 0 12px 0;
-    color: #495057;
-    font-size: 1rem;
-    font-weight: 600;
-    text-align: center;
-}
-
-.preset-categories {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.preset-category {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.preset-category-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-align: center;
-}
-
-.preset-row {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.preset-chord, .preset-progression {
-    padding: 6px 10px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: grab;
-    font-size: 0.75rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    user-select: none;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0,123,255,0.3);
-    min-width: fit-content;
-}
-
-.preset-chord:hover, .preset-progression:hover {
-    background: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,123,255,0.4);
-}
-
-.preset-chord:active, .preset-progression:active {
-    cursor: grabbing;
-    transform: scale(0.95);
-}
-
-.preset-chord.drone {
-    background: #6f42c1;
-}
-
-.preset-chord.drone:hover {
-    background: #5a2d8c;
-}
-
-.preset-chord[data-is-rest="true"] {
-    background: #6c757d;
-    font-style: italic;
-    opacity: 0.9;
-}
-
-.preset-chord[data-is-rest="true"]:hover {
-    background: #5a6268;
-    opacity: 1;
-}
-
-.preset-progression {
-    background: #28a745;
-    min-width: 70px;
-    text-align: center;
-    font-weight: 600;
-}
-
-.preset-progression:hover {
-    background: #1e7e34;
-}
-
-.preset-instructions {
-    margin-top: 8px;
-    font-size: 0.7rem;
-    color: #6c757d;
-    text-align: center;
-    font-style: italic;
-}
-
 /* Chord Display */
 .chord-display-section {
     background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
@@ -1075,13 +964,7 @@ footer {
         min-width: 100%;
     }
     
-    .preset-buttons {
-        flex-direction: column;
-    }
-    
-    .preset-btn {
-        min-width: 100%;
-    }
+
     
     .chord-display {
         justify-content: center;
@@ -1170,36 +1053,6 @@ footer {
         display: block;
         width: 100%;
         margin: 5px 0;
-    }
-    
-    /* Responsive preset section for mobile */
-    .progression-presets {
-        padding: 10px;
-    }
-    
-    .progression-presets h3 {
-        font-size: 0.9rem;
-    }
-    
-    .preset-categories {
-        gap: 8px;
-    }
-    
-    .preset-category-title {
-        font-size: 0.7rem;
-    }
-    
-    .preset-row {
-        gap: 4px;
-    }
-    
-    .preset-chord, .preset-progression {
-        padding: 5px 8px;
-        font-size: 0.7rem;
-    }
-    
-    .preset-instructions {
-        font-size: 0.65rem;
     }
 }
 
