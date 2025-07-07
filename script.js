@@ -32,8 +32,8 @@ class MusicalAccompanist {
         // Bind event handlers
         this.bindEvents();
         
-        // Load default preset
-        this.loadPreset('c-major-1645');
+        // Initialize with empty progression
+        this.displayChords();
     }
 
     /**
@@ -1414,9 +1414,6 @@ class MusicalAccompanist {
         
         // Update display
         this.displayChords();
-        
-        // Clear piano selection
-        this.clearSelection();
     }
 
     /**
