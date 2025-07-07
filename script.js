@@ -1835,18 +1835,33 @@ class MusicalAccompanist {
     updateSelectedSlotDisplay() {
         const display = document.getElementById('selected-slot-display');
         const infoText = document.getElementById('slot-info-text');
+        const measureInput = document.getElementById('goto-measure');
+        const beatInput = document.getElementById('goto-beat');
         
         if (!display || !infoText) return;
 
-        if (this.targetChordIndex === null) {
-            display.style.display = 'none';
+        // Always show the slot navigation panel
+        display.style.display = 'block';
+
+        if (this.chordProgression.length === 0) {
+            infoText.textContent = 'No measures available - Use "📐" to create measures';
+            // Clear the measure/beat inputs when no measures exist
+            if (measureInput) measureInput.value = '';
+            if (beatInput) beatInput.value = '';
+        } else if (this.targetChordIndex === null) {
             infoText.textContent = 'No slot selected';
+            // Clear the measure/beat inputs when no slot is selected
+            if (measureInput) measureInput.value = '';
+            if (beatInput) beatInput.value = '';
         } else {
-            display.style.display = 'block';
             const slot = this.chordProgression[this.targetChordIndex];
             const measureInfo = this.getMeasureIndices(this.targetChordIndex);
             const slotName = slot && slot.isEmpty ? 'Empty Slot' : (slot ? slot.name : 'Unknown');
             infoText.textContent = `Slot ${this.targetChordIndex + 1} (M${measureInfo.measureIndex + 1}B${measureInfo.chordIndex + 1}): ${slotName}`;
+            
+            // Auto-populate the measure/beat inputs with the current slot's position
+            if (measureInput) measureInput.value = measureInfo.measureIndex + 1;
+            if (beatInput) beatInput.value = measureInfo.chordIndex + 1;
         }
     }
 
@@ -1933,6 +1948,11 @@ class MusicalAccompanist {
      * Select previous empty slot
      */
     selectPreviousEmptySlot() {
+        if (this.chordProgression.length === 0) {
+            this.showStatus('No measures available. Use the "📐" button to create empty measures first.');
+            return;
+        }
+        
         let searchIndex = this.targetChordIndex !== null ? this.targetChordIndex - 1 : this.chordProgression.length - 1;
         
         for (let i = 0; i < this.chordProgression.length; i++) {
@@ -1953,6 +1973,11 @@ class MusicalAccompanist {
      * Select next empty slot
      */
     selectNextEmptySlot() {
+        if (this.chordProgression.length === 0) {
+            this.showStatus('No measures available. Use the "📐" button to create empty measures first.');
+            return;
+        }
+        
         let searchIndex = this.targetChordIndex !== null ? this.targetChordIndex + 1 : 0;
         
         for (let i = 0; i < this.chordProgression.length; i++) {
@@ -1973,6 +1998,12 @@ class MusicalAccompanist {
      * Go to a specific slot by measure and beat
      */
     gotoSpecificSlot() {
+        // Check if progression is empty
+        if (this.chordProgression.length === 0) {
+            this.showStatus('No measures available. Use the "📐" button to create empty measures first.');
+            return;
+        }
+        
         const measureInput = document.getElementById('goto-measure');
         const beatInput = document.getElementById('goto-beat');
         
