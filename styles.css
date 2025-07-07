@@ -342,33 +342,37 @@ section h2 {
 /* Delete button for measures */
 .measure-delete {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 20px;
-    height: 20px;
+    top: -10px;
+    right: -10px;
+    width: 22px;
+    height: 22px;
     background: #dc3545;
     color: white;
-    border: none;
+    border: 2px solid white;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     transition: all 0.2s ease;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 20;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    line-height: 1;
+    pointer-events: auto;
 }
 
 .measure:hover .measure-delete {
     opacity: 1;
+    transform: scale(1.05);
 }
 
 .measure-delete:hover {
-    background: #c82333;
-    transform: scale(1.1);
+    background: #c82333 !important;
+    transform: scale(1.15) !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
 }
 
 /* Empty chord slots in measures */
@@ -426,28 +430,37 @@ section h2 {
 /* Delete button for chords */
 .chord-delete {
     position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 16px;
-    height: 16px;
+    top: -8px;
+    right: -8px;
+    width: 18px;
+    height: 18px;
     background: #dc3545;
     color: white;
-    border: none;
+    border: 2px solid white;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     transition: all 0.2s ease;
-    z-index: 5;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    z-index: 15;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    line-height: 1;
+    pointer-events: auto;
 }
 
 .chord-item:hover .chord-delete {
     opacity: 1;
+    transform: scale(1.1);
+}
+
+.chord-delete:hover {
+    background: #c82333 !important;
+    transform: scale(1.2) !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4) !important;
 }
 
 .chord-delete:hover {

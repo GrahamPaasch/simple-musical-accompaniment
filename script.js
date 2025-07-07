@@ -820,10 +820,19 @@ class MusicalAccompanist {
             const measureDeleteBtn = document.createElement('button');
             measureDeleteBtn.className = 'measure-delete';
             measureDeleteBtn.innerHTML = '×';
-            measureDeleteBtn.title = 'Delete measure';
+            measureDeleteBtn.title = 'Clear all slots in measure';
             measureDeleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 this.deleteMeasure(measureIndex);
+                return false;
+            });
+            measureDeleteBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
             });
             measureElement.appendChild(measureDeleteBtn);
             
@@ -891,6 +900,11 @@ class MusicalAccompanist {
                     chordElement.classList.add('current');
                 }
                 
+                // Add selected slot highlighting for piano input
+                if (globalChordIndex === this.targetChordIndex) {
+                    chordElement.classList.add('selected-for-piano');
+                }
+                
                 chordElement.dataset.index = globalChordIndex;
                 
                 // Make chord clickable to preview (but not empty slots)
@@ -899,10 +913,19 @@ class MusicalAccompanist {
                     const chordDeleteBtn = document.createElement('button');
                     chordDeleteBtn.className = 'chord-delete';
                     chordDeleteBtn.innerHTML = '×';
-                    chordDeleteBtn.title = 'Delete chord';
+                    chordDeleteBtn.title = 'Clear chord slot';
                     chordDeleteBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
                         this.deleteChordAtIndex(globalChordIndex);
+                        return false;
+                    });
+                    chordDeleteBtn.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        return false;
                     });
                     chordElement.appendChild(chordDeleteBtn);
                     
@@ -1428,62 +1451,438 @@ class MusicalAccompanist {
     }
 
     /**
-     * Clear the current chord progression
+     * Delete a chord at the specified index (replace with empty slot)
      */
-    clearProgression() {
+    deleteChordAtIndex(chordIndex) {
+        if (chordIndex < 0 || chordIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid chord index');
+            return;
+        }
+
         // Stop playback if currently playing
         if (this.isPlaying) {
             this.stopPlayback();
         }
-        
-        // Clear the progression array
-        this.chordProgression = [];
-        
+
+        // Get chord info for status message
+        const chordToDelete = this.chordProgression[chordIndex];
+        const chordName = chordToDelete.name || 'Empty Slot';
+
+        // Replace the chord with an empty slot instead of removing it
+        this.chordProgression[chordIndex] = {
+            name: '',
+            notes: [],
+            duration: '1n',
+            isEmpty: true
+        };
+
+        // Clear slot selection if the deleted chord was selected
+        if (this.targetChordIndex === chordIndex) {
+            this.clearSlotSelection();
+        }
+
         // Update the display
         this.displayChords();
-        
+        this.hideContextMenu();
+
         // Show status message
-        this.showStatus('Progression cleared');
+        this.showStatus(`Cleared "${chordName}" - slot ${chordIndex + 1} is now empty`);
     }
 
     /**
-     * Create empty measures with the specified number from user input
+     * Delete an entire measure at the specified index (clear all slots in measure)
      */
-    createEmptyMeasures() {
-        // Get the number of measures from the input
-        const measureCountInput = document.getElementById('measure-count');
-        const numMeasures = parseInt(measureCountInput.value);
-        
-        // Validate input
-        if (isNaN(numMeasures) || numMeasures < 1) {
-            this.showStatus('Please enter a valid number of measures (minimum 1)');
+    deleteMeasure(measureIndex) {
+        const chordsPerMeasure = this.timeSignature;
+        const startIndex = measureIndex * chordsPerMeasure;
+        const endIndex = startIndex + chordsPerMeasure;
+
+        if (startIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid measure index');
             return;
         }
+
+        // Confirm deletion of the measure
+        const measureNumber = measureIndex + 1;
+        const confirmMessage = `Clear all slots in measure ${measureNumber}? This will empty ${chordsPerMeasure} chord slots.`;
         
-        // Warn for very large progressions that might impact performance
-        if (numMeasures > 100) {
-            const chordsPerMeasure = this.timeSignature;
-            const totalChordSlots = numMeasures * chordsPerMeasure;
-            const confirmed = confirm(`Creating ${numMeasures} measures will generate ${totalChordSlots} chord slots. This may impact performance on slower devices. Continue?`);
-            if (!confirmed) {
-                return;
-            }
+        if (!confirm(confirmMessage)) {
+            return;
         }
-        
+
         // Stop playback if currently playing
         if (this.isPlaying) {
             this.stopPlayback();
         }
+
+        // Calculate how many slots to actually clear (in case of partial measures)
+        const slotsToImpact = Math.min(chordsPerMeasure, this.chordProgression.length - startIndex);
+        let clearedCount = 0;
+
+        // Replace all chords in the measure with empty slots
+        for (let i = 0; i < slotsToImpact; i++) {
+            const slotIndex = startIndex + i;
+            if (!this.chordProgression[slotIndex].isEmpty) {
+                this.chordProgression[slotIndex] = {
+                    name: '',
+                    notes: [],
+                    duration: '1n',
+                    isEmpty: true
+                };
+                clearedCount++;
+            }
+        }
+
+        // Clear slot selection if it was in the cleared measure
+        if (this.targetChordIndex !== null && 
+            this.targetChordIndex >= startIndex && 
+            this.targetChordIndex < endIndex) {
+            this.clearSlotSelection();
+        }
+
+        // Update the display
+        this.displayChords();
+
+        // Show status message
+        this.showStatus(`Cleared measure ${measureNumber} (${clearedCount} chord slots emptied)`);
+    }
+
+    /**
+     * Edit a chord at the specified index
+     */
+    editChord(chordIndex) {
+        if (chordIndex < 0 || chordIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid chord index');
+            return;
+        }
+
+        this.editingChordIndex = chordIndex;
+        const chord = this.chordProgression[chordIndex];
         
-        // Clear existing progression
-        this.chordProgression = [];
+        // Get the modal elements
+        const modal = document.getElementById('chord-edit-modal');
+        const input = document.getElementById('chord-edit-input');
         
-        // Calculate total number of chord slots needed
+        if (!modal || !input) {
+            this.showStatus('Edit modal not found');
+            return;
+        }
+
+        // Pre-fill the input with current chord name
+        input.value = chord.name || '';
+        
+        // Show the modal
+        modal.style.display = 'block';
+        input.focus();
+        
+        // Hide context menu
+        this.hideContextMenu();
+    }
+
+    /**
+     * Save the edited chord
+     */
+    saveChordEdit() {
+        const input = document.getElementById('chord-edit-input');
+        const newChordName = input.value.trim();
+        
+        if (!newChordName) {
+            this.showStatus('Please enter a chord name');
+            return;
+        }
+
+        if (this.editingChordIndex === null || this.editingChordIndex < 0 || this.editingChordIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid chord index for editing');
+            this.closeEditModal();
+            return;
+        }
+
+        // Parse the new chord
+        const newChord = this.parseChord(newChordName);
+        
+        if (!newChord) {
+            this.showStatus('Invalid chord name. Try examples like: C, Am, F7, or C-E-G');
+            return;
+        }
+
+        // Update the chord in the progression
+        this.chordProgression[this.editingChordIndex] = newChord;
+        this.chordProgression[this.editingChordIndex].edited = true;
+
+        // Update the display
+        this.displayChords();
+        
+        // Close the modal
+        this.closeEditModal();
+        
+        // Show status message
+        this.showStatus(`Updated chord to "${newChord.name}"`);
+    }
+
+    /**
+     * Close the edit modal
+     */
+    closeEditModal() {
+        const modal = document.getElementById('chord-edit-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        this.editingChordIndex = null;
+    }
+
+    /**
+     * Duplicate a chord at the specified index
+     */
+    duplicateChord(chordIndex) {
+        if (chordIndex < 0 || chordIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid chord index');
+            return;
+        }
+
+        const chordToDuplicate = this.chordProgression[chordIndex];
+        
+        // Create a copy of the chord
+        const duplicatedChord = {
+            ...chordToDuplicate,
+            notes: [...chordToDuplicate.notes]
+        };
+
+        // Insert the duplicated chord right after the original
+        this.chordProgression.splice(chordIndex + 1, 0, duplicatedChord);
+
+        // Update current chord index if needed
+        if (this.currentChordIndex > chordIndex) {
+            this.currentChordIndex++;
+        }
+
+        // Update target chord index if needed
+        if (this.targetChordIndex !== null && this.targetChordIndex > chordIndex) {
+            this.targetChordIndex++;
+        }
+
+        // Update the display
+        this.displayChords();
+        this.hideContextMenu();
+
+        // Show status message
+        this.showStatus(`Duplicated "${chordToDuplicate.name || 'Empty Slot'}"`);
+    }
+
+    /**
+     * Insert an empty chord at the specified index
+     */
+    insertEmptyChord(insertIndex) {
+        // Clamp the insert index to valid range
+        insertIndex = Math.max(0, Math.min(insertIndex, this.chordProgression.length));
+
+        const emptyChord = {
+            name: '',
+            notes: [],
+            duration: '1n',
+            isEmpty: true
+        };
+
+        // Insert the empty chord
+        this.chordProgression.splice(insertIndex, 0, emptyChord);
+
+        // Update current chord index if needed
+        if (this.currentChordIndex >= insertIndex) {
+            this.currentChordIndex++;
+        }
+
+        // Update target chord index if needed
+        if (this.targetChordIndex !== null && this.targetChordIndex >= insertIndex) {
+            this.targetChordIndex++;
+        }
+
+        // Update the display
+        this.displayChords();
+        this.hideContextMenu();
+
+        // Automatically select the new empty slot
+        this.selectSlotForPiano(insertIndex);
+
+        // Show status message
+        this.showStatus(`Inserted empty chord slot at position ${insertIndex + 1}`);
+    }
+
+    /**
+     * Show chord substitution suggestions
+     */
+    showChordSubstitutions(chordIndex) {
+        if (chordIndex < 0 || chordIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid chord index');
+            return;
+        }
+
+        const chord = this.chordProgression[chordIndex];
+        this.hideContextMenu();
+        
+        // Simple substitution suggestions
+        const substitutions = this.getChordSubstitutions(chord.name);
+        
+        if (substitutions.length === 0) {
+            this.showStatus('No substitutions available for this chord');
+            return;
+        }
+
+        // Create a simple alert with substitutions
+        const substitutionText = substitutions.join(', ');
+        alert(`Substitution suggestions for ${chord.name}:\n${substitutionText}\n\nDouble-click the chord to edit it manually.`);
+    }
+
+    /**
+     * Get chord substitution suggestions
+     */
+    getChordSubstitutions(chordName) {
+        const substitutions = {
+            'C': ['Am', 'Em', 'F', 'C7'],
+            'F': ['Dm', 'Am', 'Bb', 'F7'],
+            'G': ['Em', 'Bm', 'C', 'G7'],
+            'Am': ['C', 'F', 'Dm', 'Am7'],
+            'Dm': ['F', 'Bb', 'Am', 'Dm7'],
+            'Em': ['G', 'C', 'Am', 'Em7'],
+            // Add more substitutions as needed
+        };
+
+        return substitutions[chordName] || [];
+    }
+
+    /**
+     * Delete a chord from the edit modal
+     */
+    deleteChord() {
+        if (this.editingChordIndex === null || this.editingChordIndex < 0 || this.editingChordIndex >= this.chordProgression.length) {
+            this.showStatus('No chord selected for deletion');
+            this.closeEditModal();
+            return;
+        }
+
+        // Confirm deletion
+        const chord = this.chordProgression[this.editingChordIndex];
+        const chordName = chord.name || 'Empty Slot';
+        
+        if (!confirm(`Clear "${chordName}" from slot ${this.editingChordIndex + 1}?`)) {
+            return;
+        }
+
+        // Close modal first
+        this.closeEditModal();
+
+        // Clear the chord slot
+        this.deleteChordAtIndex(this.editingChordIndex);
+    }
+
+    /**
+     * Show context menu for chord options
+     */
+    showContextMenu(event, chordIndex) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        this.contextChordIndex = chordIndex;
+        
+        const menu = document.getElementById('chord-context-menu');
+        if (!menu) {
+            this.showStatus('Context menu not found');
+            return;
+        }
+
+        // Position and show the menu
+        menu.style.left = event.clientX + 'px';
+        menu.style.top = event.clientY + 'px';
+        menu.style.display = 'block';
+    }
+
+    /**
+     * Hide the context menu
+     */
+    hideContextMenu() {
+        const menu = document.getElementById('chord-context-menu');
+        if (menu) {
+            menu.style.display = 'none';
+        }
+        this.contextChordIndex = null;
+    }
+
+    /**
+     * Select a slot for piano input
+     */
+    selectSlotForPiano(slotIndex) {
+        if (slotIndex < 0 || slotIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid slot index');
+            return;
+        }
+
+        this.targetChordIndex = slotIndex;
+        this.updateSelectedSlotDisplay();
+        
+        const slot = this.chordProgression[slotIndex];
+        const slotName = slot.isEmpty ? 'Empty Slot' : slot.name;
+        this.showStatus(`Selected slot ${slotIndex + 1} (${slotName}) for piano input`);
+        
+        // Update display to show selected slot
+        this.displayChords();
+    }
+
+    /**
+     * Clear slot selection
+     */
+    clearSlotSelection() {
+        this.targetChordIndex = null;
+        this.updateSelectedSlotDisplay();
+        this.showStatus('Slot selection cleared');
+        this.displayChords();
+    }
+
+    /**
+     * Update the selected slot display
+     */
+    updateSelectedSlotDisplay() {
+        const display = document.getElementById('selected-slot-display');
+        const infoText = document.getElementById('slot-info-text');
+        
+        if (!display || !infoText) return;
+
+        if (this.targetChordIndex === null) {
+            display.style.display = 'none';
+            infoText.textContent = 'No slot selected';
+        } else {
+            display.style.display = 'block';
+            const slot = this.chordProgression[this.targetChordIndex];
+            const measureInfo = this.getMeasureIndices(this.targetChordIndex);
+            const slotName = slot && slot.isEmpty ? 'Empty Slot' : (slot ? slot.name : 'Unknown');
+            infoText.textContent = `Slot ${this.targetChordIndex + 1} (M${measureInfo.measureIndex + 1}B${measureInfo.chordIndex + 1}): ${slotName}`;
+        }
+    }
+
+    /**
+     * Create empty measures
+     */
+    createEmptyMeasures() {
+        const countInput = document.getElementById('measure-count');
+        const measureCount = parseInt(countInput.value) || 4;
+        
+        if (measureCount < 1 || measureCount > 20) {
+            this.showStatus('Please enter a number between 1 and 20');
+            return;
+        }
+
         const chordsPerMeasure = this.timeSignature;
-        const totalChordSlots = numMeasures * chordsPerMeasure;
+        const totalSlots = measureCount * chordsPerMeasure;
         
-        // Create empty chord slots
-        for (let i = 0; i < totalChordSlots; i++) {
+        const confirmMessage = `Create ${measureCount} empty measures (${totalSlots} chord slots)?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        // Stop playback if currently playing
+        if (this.isPlaying) {
+            this.stopPlayback();
+        }
+
+        // Create empty slots
+        for (let i = 0; i < totalSlots; i++) {
             this.chordProgression.push({
                 name: '',
                 notes: [],
@@ -1491,240 +1890,114 @@ class MusicalAccompanist {
                 isEmpty: true
             });
         }
-        
-        // Update the display
+
+        // Update display
         this.displayChords();
-        
-        // Automatically select the first empty slot for convenience
-        if (totalChordSlots > 0) {
-            this.selectSlotForPiano(0);
-        }
-        
-        // Show status message
-        this.showStatus(`Created ${numMeasures} empty measure${numMeasures > 1 ? 's' : ''} (${totalChordSlots} chord slots) - First slot selected`);
+        this.showStatus(`Created ${measureCount} empty measures (${totalSlots} slots)`);
     }
 
     /**
-     * Select an empty slot for piano input
-     */
-    selectSlotForPiano(slotIndex) {
-        // Clear any previous selection
-        this.clearSlotSelection();
-        
-        // Set the target slot
-        this.targetChordIndex = slotIndex;
-        
-        // Visually highlight the selected slot
-        const slotElement = document.querySelector(`[data-index="${slotIndex}"]`);
-        if (slotElement) {
-            slotElement.classList.add('selected-for-piano');
-        }
-        
-        // Update the piano interface to show which slot is being filled
-        this.updateSelectedSlotDisplay();
-        
-        this.showStatus(`Selected slot ${slotIndex + 1} (Measure ${Math.floor(slotIndex / this.timeSignature) + 1}, Beat ${(slotIndex % this.timeSignature) + 1}). Use piano keys or navigation arrows.`);
-    }
-    
-    /**
-     * Clear slot selection
-     */
-    clearSlotSelection() {
-        if (this.targetChordIndex !== null) {
-            // Remove visual highlight
-            const slotElement = document.querySelector(`[data-index="${this.targetChordIndex}"]`);
-            if (slotElement) {
-                slotElement.classList.remove('selected-for-piano');
-            }
-        }
-        
-        this.targetChordIndex = null;
-        this.updateSelectedSlotDisplay();
-    }
-    
-    /**
-     * Update the display to show which slot is selected for piano input
-     */
-    updateSelectedSlotDisplay() {
-        const slotDisplay = document.getElementById('selected-slot-display');
-        const slotInfoText = document.getElementById('slot-info-text');
-        
-        if (slotDisplay && slotInfoText) {
-            if (this.targetChordIndex !== null) {
-                const measures = this.getMeasureIndices(this.targetChordIndex);
-                const emptyCount = this.chordProgression.filter(chord => chord.isEmpty).length;
-                slotInfoText.textContent = `Selected: Measure ${measures.measureIndex + 1}, Beat ${measures.chordIndex + 1} (${emptyCount} empty slots remaining)`;
-                slotDisplay.style.display = 'block';
-            } else {
-                const emptyCount = this.chordProgression.filter(chord => chord.isEmpty).length;
-                if (emptyCount > 0) {
-                    slotInfoText.textContent = `${emptyCount} empty slots available - click one to select`;
-                } else {
-                    slotInfoText.textContent = 'No empty slots available';
-                }
-                slotDisplay.style.display = 'block';
-            }
-        }
-    }
-    
-    /**
-     * Show context menu for empty slots
-     */
-    showEmptySlotMenu(e, slotIndex) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Create simple context menu
-        const existingMenu = document.getElementById('empty-slot-menu');
-        if (existingMenu) {
-            existingMenu.remove();
-        }
-        
-        const menu = document.createElement('div');
-        menu.id = 'empty-slot-menu';
-        menu.className = 'context-menu';
-        menu.style.position = 'fixed';
-        menu.style.left = e.clientX + 'px';
-        menu.style.top = e.clientY + 'px';
-        menu.style.display = 'block';
-        menu.style.zIndex = '1000';
-        
-        menu.innerHTML = `
-            <div class="menu-item" onclick="musicalAccompanist.selectSlotForPiano(${slotIndex})">🎹 Fill with Piano</div>
-            <div class="menu-item" onclick="musicalAccompanist.fillSlotWithRest(${slotIndex})">⏸️ Add Rest</div>
-            <div class="menu-item" onclick="musicalAccompanist.editChord(${slotIndex})">✏️ Type Chord</div>
-        `;
-        
-        document.body.appendChild(menu);
-        
-        // Close menu when clicking elsewhere
-        setTimeout(() => {
-            document.addEventListener('click', function closeMenu() {
-                menu.remove();
-                document.removeEventListener('click', closeMenu);
-            });
-        }, 10);
-    }
-    
-    /**
-     * Fill a slot with a rest
-     */
-    fillSlotWithRest(slotIndex) {
-        if (slotIndex >= 0 && slotIndex < this.chordProgression.length) {
-            this.chordProgression[slotIndex] = {
-                name: '-',
-                notes: [],
-                duration: '1n',
-                isRest: true
-            };
-            
-            this.displayChords();
-            this.showStatus(`Added rest to slot ${slotIndex + 1}`);
-        }
-    }
-
-    /**
-     * Add a rest to the selected target slot
+     * Add a rest to the currently selected target slot
      */
     addRestToTarget() {
-        if (this.targetChordIndex !== null && this.targetChordIndex < this.chordProgression.length) {
-            this.fillSlotWithRest(this.targetChordIndex);
-            this.clearSlotSelection();
-        } else {
-            this.showStatus('No slot selected. Click an empty slot first, then use this button.');
+        if (this.targetChordIndex === null) {
+            this.showStatus('No slot selected. Click on an empty slot first.');
+            return;
         }
+
+        if (this.targetChordIndex < 0 || this.targetChordIndex >= this.chordProgression.length) {
+            this.showStatus('Invalid slot index');
+            return;
+        }
+
+        // Create rest chord
+        const restChord = {
+            name: 'REST',
+            notes: [],
+            duration: '1n',
+            isRest: true
+        };
+
+        // Replace the slot with the rest
+        this.chordProgression[this.targetChordIndex] = restChord;
+        
+        // Update display
+        this.displayChords();
+        this.showStatus(`Added rest to slot ${this.targetChordIndex + 1}`);
+        
+        // Clear selection
+        this.clearSlotSelection();
     }
 
     /**
-     * Select the next empty slot
-     */
-    selectNextEmptySlot() {
-        const currentIndex = this.targetChordIndex !== null ? this.targetChordIndex : -1;
-        let nextIndex = currentIndex + 1;
-        
-        // Find next empty slot
-        while (nextIndex < this.chordProgression.length) {
-            if (this.chordProgression[nextIndex].isEmpty) {
-                this.selectSlotForPiano(nextIndex);
-                return;
-            }
-            nextIndex++;
-        }
-        
-        // If no empty slots found after current, wrap to beginning
-        nextIndex = 0;
-        while (nextIndex <= currentIndex && nextIndex < this.chordProgression.length) {
-            if (this.chordProgression[nextIndex].isEmpty) {
-                this.selectSlotForPiano(nextIndex);
-                return;
-            }
-            nextIndex++;
-        }
-        
-        this.showStatus('No empty slots found');
-    }
-
-    /**
-     * Select the previous empty slot
+     * Select previous empty slot
      */
     selectPreviousEmptySlot() {
-        const currentIndex = this.targetChordIndex !== null ? this.targetChordIndex : this.chordProgression.length;
-        let prevIndex = currentIndex - 1;
+        let searchIndex = this.targetChordIndex !== null ? this.targetChordIndex - 1 : this.chordProgression.length - 1;
         
-        // Find previous empty slot
-        while (prevIndex >= 0) {
-            if (this.chordProgression[prevIndex].isEmpty) {
-                this.selectSlotForPiano(prevIndex);
+        for (let i = 0; i < this.chordProgression.length; i++) {
+            if (searchIndex < 0) searchIndex = this.chordProgression.length - 1;
+            
+            const slot = this.chordProgression[searchIndex];
+            if (slot && slot.isEmpty) {
+                this.selectSlotForPiano(searchIndex);
                 return;
             }
-            prevIndex--;
-        }
-        
-        // If no empty slots found before current, wrap to end
-        prevIndex = this.chordProgression.length - 1;
-        while (prevIndex >= currentIndex && prevIndex >= 0) {
-            if (this.chordProgression[prevIndex].isEmpty) {
-                this.selectSlotForPiano(prevIndex);
-                return;
-            }
-            prevIndex--;
+            searchIndex--;
         }
         
         this.showStatus('No empty slots found');
     }
 
     /**
-     * Go to specific measure and beat
+     * Select next empty slot
+     */
+    selectNextEmptySlot() {
+        let searchIndex = this.targetChordIndex !== null ? this.targetChordIndex + 1 : 0;
+        
+        for (let i = 0; i < this.chordProgression.length; i++) {
+            if (searchIndex >= this.chordProgression.length) searchIndex = 0;
+            
+            const slot = this.chordProgression[searchIndex];
+            if (slot && slot.isEmpty) {
+                this.selectSlotForPiano(searchIndex);
+                return;
+            }
+            searchIndex++;
+        }
+        
+        this.showStatus('No empty slots found');
+    }
+
+    /**
+     * Go to a specific slot by measure and beat
      */
     gotoSpecificSlot() {
         const measureInput = document.getElementById('goto-measure');
         const beatInput = document.getElementById('goto-beat');
         
-        const measureNum = parseInt(measureInput.value);
-        const beatNum = parseInt(beatInput.value);
+        const measureNumber = parseInt(measureInput.value);
+        const beatNumber = parseInt(beatInput.value);
         
-        if (isNaN(measureNum) || measureNum < 1) {
-            this.showStatus('Please enter a valid measure number');
+        if (!measureNumber || measureNumber < 1) {
+            this.showStatus('Please enter a valid measure number (1 or higher)');
             return;
         }
         
-        const chordsPerMeasure = this.timeSignature;
-        const maxBeat = chordsPerMeasure;
-        
-        if (isNaN(beatNum) || beatNum < 1 || beatNum > maxBeat) {
-            this.showStatus(`Please enter a valid beat number (1-${maxBeat} for ${chordsPerMeasure}/4 time)`);
+        if (!beatNumber || beatNumber < 1 || beatNumber > this.timeSignature) {
+            this.showStatus(`Please enter a valid beat number (1-${this.timeSignature})`);
             return;
         }
         
-        // Convert to global index
-        const globalIndex = (measureNum - 1) * chordsPerMeasure + (beatNum - 1);
+        const measureIndex = measureNumber - 1;
+        const beatIndex = beatNumber - 1;
+        const globalIndex = this.getGlobalChordIndex(measureIndex, beatIndex);
         
         if (globalIndex >= this.chordProgression.length) {
-            this.showStatus(`Slot not found. Current progression has ${this.chordProgression.length} slots.`);
+            this.showStatus('That slot does not exist in the current progression');
             return;
         }
         
-        // Select the slot
         this.selectSlotForPiano(globalIndex);
         
         // Clear the inputs
@@ -1732,7 +2005,59 @@ class MusicalAccompanist {
         beatInput.value = '';
     }
 
-    // ...existing code...
+    /**
+     * Show context menu for empty slots
+     */
+    showEmptySlotMenu(event, slotIndex) {
+        // For now, just select the slot - we can expand this later
+        event.preventDefault();
+        this.selectSlotForPiano(slotIndex);
+    }
+
+    /**
+     * Clear the entire progression
+     */
+    clearProgression() {
+        if (this.chordProgression.length === 0) {
+            this.showStatus('Progression is already empty');
+            return;
+        }
+
+        if (!confirm('Clear the entire chord progression?')) {
+            return;
+        }
+
+        // Stop playback if currently playing
+        if (this.isPlaying) {
+            this.stopPlayback();
+        }
+
+        this.chordProgression = [];
+        this.currentChordIndex = 0;
+        this.clearSlotSelection();
+        this.displayChords();
+        this.showStatus('Progression cleared');
+    }
+
+    /**
+     * Update progression information display
+     */
+    updateProgressionInfo() {
+        const lengthElement = document.getElementById('progression-length');
+        const durationElement = document.getElementById('progression-duration');
+        
+        if (lengthElement) {
+            const count = this.chordProgression.length;
+            lengthElement.textContent = `${count} chord${count !== 1 ? 's' : ''}`;
+        }
+        
+        if (durationElement) {
+            const durationSeconds = this.chordProgression.length * (60 / this.tempo);
+            const minutes = Math.floor(durationSeconds / 60);
+            const seconds = Math.floor(durationSeconds % 60);
+            durationElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
 }
 
 // Initialize the application when the page loads

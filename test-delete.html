@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Delete Functionality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .measure {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin: 8px;
+            min-width: 200px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chord-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #495057;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            border: 1px solid #e9ecef;
+            min-width: 40px;
+            text-align: center;
+            position: relative;
+        }
+        .measure-delete {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 22px;
+            height: 22px;
+            background: #dc3545;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            z-index: 20;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+        }
+        .chord-delete {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 18px;
+            height: 18px;
+            background: #dc3545;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            z-index: 15;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .measure-delete:hover,
+        .chord-delete:hover {
+            background: #c82333;
+            transform: scale(1.1);
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin-top: 20px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h1>🧪 Delete Button Test</h1>
+        <p>Testing the delete button functionality in isolation:</p>
+        
+        <div class="measure" data-measure="0">
+            <button class="measure-delete" onclick="deleteMeasure(0)">×</button>
+            <div class="chord-item" data-chord="0">
+                C
+                <button class="chord-delete" onclick="deleteChord(0)">×</button>
+            </div>
+            <div class="chord-item" data-chord="1">
+                F
+                <button class="chord-delete" onclick="deleteChord(1)">×</button>
+            </div>
+            <div class="chord-item" data-chord="2">
+                G
+                <button class="chord-delete" onclick="deleteChord(2)">×</button>
+            </div>
+            <div class="chord-item" data-chord="3">
+                C
+                <button class="chord-delete" onclick="deleteChord(3)">×</button>
+            </div>
+        </div>
+        
+        <div class="measure" data-measure="1">
+            <button class="measure-delete" onclick="deleteMeasure(1)">×</button>
+            <div class="chord-item" data-chord="4">
+                Am
+                <button class="chord-delete" onclick="deleteChord(4)">×</button>
+            </div>
+            <div class="chord-item" data-chord="5">
+                F
+                <button class="chord-delete" onclick="deleteChord(5)">×</button>
+            </div>
+            <div class="chord-item" data-chord="6">
+                C
+                <button class="chord-delete" onclick="deleteChord(6)">×</button>
+            </div>
+            <div class="chord-item" data-chord="7">
+                G
+                <button class="chord-delete" onclick="deleteChord(7)">×</button>
+            </div>
+        </div>
+        
+        <div class="log" id="log">
+            Click on the red × buttons to test deletion functionality...<br>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('log');
+            logElement.innerHTML += message + '<br>';
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function deleteChord(chordIndex) {
+            log(`🗑️ deleteChord called with index: ${chordIndex}`);
+            
+            const chordElement = document.querySelector(`[data-chord="${chordIndex}"]`);
+            if (chordElement) {
+                const chordName = chordElement.textContent.replace('×', '').trim();
+                log(`Deleting chord: "${chordName}" at index ${chordIndex}`);
+                
+                chordElement.style.opacity = '0.3';
+                chordElement.style.textDecoration = 'line-through';
+                
+                setTimeout(() => {
+                    chordElement.remove();
+                    log(`✅ Chord "${chordName}" deleted successfully`);
+                }, 500);
+            } else {
+                log(`❌ ERROR: Chord element not found for index ${chordIndex}`);
+            }
+        }
+
+        function deleteMeasure(measureIndex) {
+            log(`🗑️ deleteMeasure called with index: ${measureIndex}`);
+            
+            const measureElement = document.querySelector(`[data-measure="${measureIndex}"]`);
+            if (measureElement) {
+                const measureNumber = measureIndex + 1;
+                log(`Deleting measure ${measureNumber}`);
+                
+                if (confirm(`Delete measure ${measureNumber}? This will remove all chord slots in this measure.`)) {
+                    measureElement.style.opacity = '0.3';
+                    measureElement.style.transform = 'scale(0.9)';
+                    
+                    setTimeout(() => {
+                        measureElement.remove();
+                        log(`✅ Measure ${measureNumber} deleted successfully`);
+                    }, 500);
+                } else {
+                    log(`❌ Measure ${measureNumber} deletion cancelled by user`);
+                }
+            } else {
+                log(`❌ ERROR: Measure element not found for index ${measureIndex}`);
+            }
+        }
+
+        // Test the button visibility on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🎵 Delete button test page loaded');
+            log('Delete buttons should be visible as red circles with × symbols');
+            
+            const measureDeleteButtons = document.querySelectorAll('.measure-delete');
+            const chordDeleteButtons = document.querySelectorAll('.chord-delete');
+            
+            log(`Found ${measureDeleteButtons.length} measure delete buttons`);
+            log(`Found ${chordDeleteButtons.length} chord delete buttons`);
+            
+            if (measureDeleteButtons.length === 0 || chordDeleteButtons.length === 0) {
+                log('❌ ERROR: Delete buttons not found! Check CSS and HTML.');
+            } else {
+                log('✅ Delete buttons found and should be visible.');
+            }
+        });
+    </script>
+</body>
+</html>
