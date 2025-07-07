@@ -16,7 +16,7 @@ class MusicalAccompanist {
         this.tempo = 120;
         this.volume = 0.5;
         this.loopMode = true;
-        this.metronomeEnabled = false;
+        this.metronomeEnabled = true;
         this.selectedNotes = []; // For piano keyboard
         this.targetChordIndex = null; // Track which slot to fill with piano selection
         this.timeSignature = 4; // Default to 4/4 time
@@ -97,10 +97,6 @@ class MusicalAccompanist {
             this.timeSignature = parseInt(e.target.value);
             this.displayChords(); // Refresh the display with new time signature
             this.showStatus(`Time signature changed to: ${this.timeSignature}/4`);
-        });
-
-        document.getElementById('metronome').addEventListener('change', (e) => {
-            this.metronomeEnabled = e.target.checked;
         });
 
         document.getElementById('loop').addEventListener('change', (e) => {
