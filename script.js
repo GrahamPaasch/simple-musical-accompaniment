@@ -1867,15 +1867,21 @@ class MusicalAccompanist {
         const countInput = document.getElementById('measure-count');
         const measureCount = parseInt(countInput.value) || 4;
         
-        if (measureCount < 1 || measureCount > 20) {
-            this.showStatus('Please enter a number between 1 and 20');
+        if (measureCount < 1 || measureCount > 500) {
+            this.showStatus('Please enter a number between 1 and 500');
             return;
         }
 
         const chordsPerMeasure = this.timeSignature;
         const totalSlots = measureCount * chordsPerMeasure;
         
-        const confirmMessage = `Create ${measureCount} empty measures (${totalSlots} chord slots)?`;
+        let confirmMessage = `Create ${measureCount} empty measures (${totalSlots} chord slots)?`;
+        
+        // Add performance warning for very large progressions
+        if (measureCount > 100) {
+            confirmMessage += `\n\nNote: Creating ${measureCount} measures will generate a large progression. For best performance with classical pieces, consider working in sections.`;
+        }
+        
         if (!confirm(confirmMessage)) {
             return;
         }

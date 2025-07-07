@@ -240,6 +240,52 @@
     </div>
 
     <div class="test-section">
+        <h3>Test 9: Large Measure Count Support (Classical Music)</h3>
+        <div class="test-step">
+            <strong>Step 9.1:</strong> Clear the progression to start fresh
+        </div>
+        <div class="test-step">
+            <strong>Step 9.2:</strong> Test higher measure limits:
+            <ul>
+                <li>Try entering 50 measures and verify it works</li>
+                <li>Try entering 100 measures and verify it works</li>
+                <li>Try entering 200 measures and verify it works</li>
+                <li>Try entering 501 measures and verify it shows error (exceeds limit)</li>
+            </ul>
+        </div>
+        <div class="test-step">
+            <strong>Step 9.3:</strong> Create a large progression (e.g., 50 measures = 200 slots in 4/4 time)
+        </div>
+        <div class="test-step">
+            <strong>Step 9.4:</strong> Verify that:
+            <ul>
+                <li>All measures are created correctly</li>
+                <li>Measure numbers display properly (1, 2, 3... 50)</li>
+                <li>Empty slots are clickable and selectable</li>
+                <li>Auto-advance works across many measures</li>
+                <li>Display performance is reasonable (not sluggish)</li>
+            </ul>
+        </div>
+        <div class="test-step">
+            <strong>Step 9.5:</strong> Test navigation in large progressions:
+            <ul>
+                <li>Use "Go" feature to jump to measure 25, beat 3</li>
+                <li>Use "Go" feature to jump to measure 48, beat 1</li>
+                <li>Verify slot selection works at any position</li>
+            </ul>
+        </div>
+        <div class="test-step">
+            <strong>Step 9.6:</strong> Test clearing and playback with large progressions:
+            <ul>
+                <li>Fill some slots across different measures</li>
+                <li>Test playback (should work smoothly)</li>
+                <li>Test measure clearing (should work on any measure)</li>
+                <li>Test full progression clearing</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
         <h3>Test 8: Auto-Advance to Next Empty Slot</h3>
         <div class="test-step">
             <strong>Step 8.1:</strong> Create 3 empty measures (12 slots in 4/4 time)
@@ -282,6 +328,8 @@
                 <li><strong>NEW:</strong> After filling a slot, the next empty slot to the right is automatically selected</li>
                 <li><strong>NEW:</strong> Auto-advance enables smooth sequential chord entry workflow</li>
                 <li>Empty measure creation works properly</li>
+                <li><strong>NEW:</strong> Support for up to 500 measures (suitable for classical pieces)</li>
+                <li><strong>NEW:</strong> Large progressions maintain good performance and navigation</li>
                 <li>Slot navigation features work as expected</li>
                 <li>UI text consistently uses "Clear" instead of "Delete"</li>
             </ul>
