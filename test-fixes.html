@@ -114,12 +114,12 @@
     </div>
 
     <div class="test-section">
-        <h3>Test 3: Empty Slot Selection for Piano Input</h3>
+        <h3>Test 3: Empty Slot Selection for Piano Input & Auto-Advance</h3>
         <div class="test-step">
             <strong>Step 3.1:</strong> Create some empty measures using the "📐" button (try 2 measures)
         </div>
         <div class="test-step">
-            <strong>Step 3.2:</strong> Click on an empty slot (should show "+" icon)
+            <strong>Step 3.2:</strong> Click on the first empty slot (should show "+" icon)
         </div>
         <div class="test-step">
             <strong>Step 3.3:</strong> Verify that:
@@ -139,8 +139,19 @@
             <strong>Step 3.6:</strong> Verify that:
             <ul>
                 <li>The chord appears in the selected slot</li>
-                <li>The slot selection is cleared</li>
+                <li><strong>NEW:</strong> The next empty slot to the right is automatically selected</li>
+                <li>The slot selection display updates to show the new selected slot</li>
                 <li>Other empty slots remain unaffected</li>
+            </ul>
+        </div>
+        <div class="test-step">
+            <strong>Step 3.7:</strong> Test the auto-advance workflow:
+            <ul>
+                <li>Select different notes (try F-A-C for F major)</li>
+                <li>Click "Add to Slot" again</li>
+                <li>Verify the chord fills the auto-selected slot and advances again</li>
+                <li>Continue until no more empty slots are available to the right</li>
+                <li>Verify that selection is cleared when no more empty slots exist</li>
             </ul>
         </div>
     </div>
@@ -229,6 +240,37 @@
     </div>
 
     <div class="test-section">
+        <h3>Test 8: Auto-Advance to Next Empty Slot</h3>
+        <div class="test-step">
+            <strong>Step 8.1:</strong> Create 3 empty measures (12 slots in 4/4 time)
+        </div>
+        <div class="test-step">
+            <strong>Step 8.2:</strong> Click on the first empty slot to select it
+        </div>
+        <div class="test-step">
+            <strong>Step 8.3:</strong> Select notes C-E-G on piano and click "Add to Slot"
+        </div>
+        <div class="test-step">
+            <strong>Step 8.4:</strong> Verify that slot 2 is automatically selected (highlighted in green)
+        </div>
+        <div class="test-step">
+            <strong>Step 8.5:</strong> Select different notes F-A-C and click "Add to Slot"
+        </div>
+        <div class="test-step">
+            <strong>Step 8.6:</strong> Verify that slot 3 is automatically selected
+        </div>
+        <div class="test-step">
+            <strong>Step 8.7:</strong> Continue this process through multiple slots to test the workflow
+        </div>
+        <div class="test-step">
+            <strong>Step 8.8:</strong> Fill all slots in the progression and verify that when the last slot is filled, no slot is auto-selected (selection is cleared)
+        </div>
+        <div class="test-step">
+            <strong>Step 8.9:</strong> Test edge case: Fill a slot that has no empty slots to its right and verify selection is cleared
+        </div>
+    </div>
+
+    <div class="test-section">
         <h3>✅ Expected Results Summary</h3>
         <div class="success">
             <strong>All tests should demonstrate:</strong>
@@ -237,6 +279,8 @@
                 <li>Empty slots are clickable and selectable for piano input</li>
                 <li>Selected slots are visually highlighted</li>
                 <li>Piano input fills the selected slot correctly</li>
+                <li><strong>NEW:</strong> After filling a slot, the next empty slot to the right is automatically selected</li>
+                <li><strong>NEW:</strong> Auto-advance enables smooth sequential chord entry workflow</li>
                 <li>Empty measure creation works properly</li>
                 <li>Slot navigation features work as expected</li>
                 <li>UI text consistently uses "Clear" instead of "Delete"</li>

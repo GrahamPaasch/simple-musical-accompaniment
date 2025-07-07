@@ -1402,13 +1402,17 @@ class MusicalAccompanist {
         // Check if we have a target slot selected
         if (this.targetChordIndex !== null && this.targetChordIndex < this.chordProgression.length) {
             // Fill the specific slot
+            const currentSlotIndex = this.targetChordIndex;
             this.chordProgression[this.targetChordIndex] = chord;
             this.showStatus(`Filled slot ${this.targetChordIndex + 1} with ${chordName}`);
-            this.clearSlotSelection();
+            
+            // Auto-advance to next empty slot if available
+            this.autoAdvanceToNextEmptySlot(currentSlotIndex);
         } else {
             // Add to end of progression (original behavior)
             this.chordProgression.push(chord);
             this.showStatus(`Added ${chordName} to progression`);
+            this.clearSlotSelection();
         }
         
         // Update display
@@ -2003,6 +2007,24 @@ class MusicalAccompanist {
         // Clear the inputs
         measureInput.value = '';
         beatInput.value = '';
+    }
+
+    /**
+     * Auto-advance to the next empty slot after filling current slot
+     */
+    autoAdvanceToNextEmptySlot(currentSlotIndex) {
+        // Look for the next empty slot starting from the slot immediately to the right
+        for (let i = currentSlotIndex + 1; i < this.chordProgression.length; i++) {
+            const slot = this.chordProgression[i];
+            if (slot && slot.isEmpty) {
+                // Found the next empty slot, select it
+                this.selectSlotForPiano(i);
+                return;
+            }
+        }
+        
+        // If no empty slot found to the right, clear selection
+        this.clearSlotSelection();
     }
 
     /**
