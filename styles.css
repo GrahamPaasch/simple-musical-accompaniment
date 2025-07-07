@@ -468,18 +468,6 @@ section h2 {
     transform: scale(1.1);
 }
 
-.chord-item.rest-chord {
-    background: #6c757d;
-    color: white;
-    font-style: italic;
-    opacity: 0.8;
-}
-
-.chord-item.rest-chord:hover {
-    background: #5a6268;
-    opacity: 1;
-}
-
 .chord-item.bar-line {
     background: #495057;
     color: white;

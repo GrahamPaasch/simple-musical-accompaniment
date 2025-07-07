@@ -137,11 +137,6 @@ class MusicalAccompanist {
             this.addSelectionToProgression();
         });
 
-        // New piano controls
-        document.getElementById('add-rest').addEventListener('click', () => {
-            this.addRestToTarget();
-        });
-
         document.getElementById('clear-slot-selection').addEventListener('click', () => {
             this.clearSlotSelection();
         });
@@ -692,16 +687,6 @@ class MusicalAccompanist {
      * Parse a single chord name into notes
      */
     parseChord(chordName) {
-        // Handle rest/pause
-        if (chordName === '-' || chordName === 'REST' || chordName === 'rest') {
-            return {
-                name: '-',
-                notes: [],
-                duration: '1n',
-                isRest: true
-            };
-        }
-
         // Check if it's a custom chord using note-dash-note syntax
         if (chordName.includes('-') && chordName !== '-') {
             return this.parseCustomChord(chordName);
@@ -882,9 +867,6 @@ class MusicalAccompanist {
                         }
                         this.showEmptySlotMenu(e, globalChordIndex);
                     });
-                } else if (chord.isRest) {
-                    chordElement.textContent = 'REST';
-                    chordElement.classList.add('rest-chord');
                 } else {
                     chordElement.textContent = chord.name;
                     if (chord.isSingleNote) {
@@ -1057,10 +1039,7 @@ class MusicalAccompanist {
      * Preview a single chord by playing it briefly
      */
     previewChord(chord) {
-        if (!this.synth || chord.isRest) {
-            if (chord.isRest) {
-                this.showStatus('Rest - no sound');
-            }
+        if (!this.synth) {
             return;
         }
         
@@ -1125,25 +1104,15 @@ class MusicalAccompanist {
         // Highlight current chord
         this.highlightCurrentChord();
         
-        // Handle rest chords
-        if (currentChord.isRest) {
-            // Stop all sounds for rest
-            if (this.synth) {
-                this.synth.releaseAll();
-            }
-            this.showStatus('Rest');
-            document.getElementById('current-chord-display').textContent = 'REST';
-        } else {
-            // Get frequencies for current chord
-            const frequencies = this.getChordFrequencies(currentChord);
-            
-            // Play the chord
-            this.playChord(frequencies, currentChord);
-            
-            // Update status
-            this.showStatus(`Playing: ${currentChord.name}`);
-            document.getElementById('current-chord-display').textContent = currentChord.name;
-        }
+        // Get frequencies for current chord
+        const frequencies = this.getChordFrequencies(currentChord);
+        
+        // Play the chord
+        this.playChord(frequencies, currentChord);
+        
+        // Update status
+        this.showStatus(`Playing: ${currentChord.name}`);
+        document.getElementById('current-chord-display').textContent = currentChord.name;
         
         // Play metronome if enabled and not a drone
         if (this.metronomeEnabled && !currentChord.isDrone) {
@@ -1940,39 +1909,6 @@ class MusicalAccompanist {
         // Update display
         this.displayChords();
         this.showStatus(`Created ${measureCount} empty measures (${totalSlots} slots)`);
-    }
-
-    /**
-     * Add a rest to the currently selected target slot
-     */
-    addRestToTarget() {
-        if (this.targetChordIndex === null) {
-            this.showStatus('No slot selected. Click on an empty slot first.');
-            return;
-        }
-
-        if (this.targetChordIndex < 0 || this.targetChordIndex >= this.chordProgression.length) {
-            this.showStatus('Invalid slot index');
-            return;
-        }
-
-        // Create rest chord
-        const restChord = {
-            name: 'REST',
-            notes: [],
-            duration: '1n',
-            isRest: true
-        };
-
-        // Replace the slot with the rest
-        this.chordProgression[this.targetChordIndex] = restChord;
-        
-        // Update display
-        this.displayChords();
-        this.showStatus(`Added rest to slot ${this.targetChordIndex + 1}`);
-        
-        // Clear selection
-        this.clearSlotSelection();
     }
 
     /**
