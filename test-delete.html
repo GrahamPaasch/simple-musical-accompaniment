@@ -188,13 +188,24 @@
                 const measureNumber = measureIndex + 1;
                 log(`Deleting measure ${measureNumber}`);
                 
-                if (confirm(`Delete measure ${measureNumber}? This will remove all chord slots in this measure.`)) {
+                if (confirm(`Delete measure ${measureNumber} completely? This will remove the entire measure and shift subsequent measures left.`)) {
                     measureElement.style.opacity = '0.3';
                     measureElement.style.transform = 'scale(0.9)';
                     
                     setTimeout(() => {
                         measureElement.remove();
                         log(`✅ Measure ${measureNumber} deleted successfully`);
+                        
+                        // Update remaining measure numbers
+                        const remainingMeasures = document.querySelectorAll('[data-measure]');
+                        remainingMeasures.forEach((measure, index) => {
+                            if (parseInt(measure.dataset.measure) > measureIndex) {
+                                const newIndex = parseInt(measure.dataset.measure) - 1;
+                                measure.dataset.measure = newIndex;
+                                log(`📝 Updated measure ${parseInt(measure.dataset.measure) + 1} to measure ${newIndex + 1}`);
+                            }
+                        });
+                        
                     }, 500);
                 } else {
                     log(`❌ Measure ${measureNumber} deletion cancelled by user`);

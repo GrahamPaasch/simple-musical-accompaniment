@@ -801,7 +801,7 @@ class MusicalAccompanist {
             const measureDeleteBtn = document.createElement('button');
             measureDeleteBtn.className = 'measure-delete';
             measureDeleteBtn.innerHTML = '×';
-            measureDeleteBtn.title = 'Clear all slots in measure';
+            measureDeleteBtn.title = 'Delete entire measure';
             measureDeleteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1484,7 +1484,7 @@ class MusicalAccompanist {
     }
 
     /**
-     * Delete an entire measure at the specified index (clear all slots in measure)
+     * Delete an entire measure at the specified index (remove the measure completely)
      */
     deleteMeasure(measureIndex) {
         const chordsPerMeasure = this.timeSignature;
@@ -1498,7 +1498,8 @@ class MusicalAccompanist {
 
         // Confirm deletion of the measure
         const measureNumber = measureIndex + 1;
-        const confirmMessage = `Clear all slots in measure ${measureNumber}? This will empty ${chordsPerMeasure} chord slots.`;
+        const totalMeasures = Math.ceil(this.chordProgression.length / chordsPerMeasure);
+        const confirmMessage = `Delete measure ${measureNumber} completely? This will remove the entire measure and shift subsequent measures left.`;
         
         if (!confirm(confirmMessage)) {
             return;
@@ -1509,36 +1510,46 @@ class MusicalAccompanist {
             this.stopPlayback();
         }
 
-        // Calculate how many slots to actually clear (in case of partial measures)
-        const slotsToImpact = Math.min(chordsPerMeasure, this.chordProgression.length - startIndex);
-        let clearedCount = 0;
+        // Calculate how many slots to actually remove (in case of partial measures)
+        const slotsToRemove = Math.min(chordsPerMeasure, this.chordProgression.length - startIndex);
 
-        // Replace all chords in the measure with empty slots
-        for (let i = 0; i < slotsToImpact; i++) {
-            const slotIndex = startIndex + i;
-            if (!this.chordProgression[slotIndex].isEmpty) {
-                this.chordProgression[slotIndex] = {
+        // Clear slot selection if it was in the deleted measure or after it
+        if (this.targetChordIndex !== null && this.targetChordIndex >= startIndex) {
+            this.clearSlotSelection();
+        }
+
+        // Remove the entire measure from the progression
+        this.chordProgression.splice(startIndex, slotsToRemove);
+
+        // Update current chord index if necessary (for playback position)
+        if (this.currentChordIndex >= startIndex) {
+            if (this.currentChordIndex < endIndex) {
+                // Current chord was in the deleted measure, reset to start
+                this.currentChordIndex = 0;
+            } else {
+                // Current chord was after the deleted measure, shift it back
+                this.currentChordIndex -= slotsToRemove;
+            }
+        }
+
+        // If we deleted the last measure(s) and there's nothing left, add one empty measure
+        if (this.chordProgression.length === 0) {
+            for (let i = 0; i < chordsPerMeasure; i++) {
+                this.chordProgression.push({
                     name: '',
                     notes: [],
                     duration: '1n',
                     isEmpty: true
-                };
-                clearedCount++;
+                });
             }
-        }
-
-        // Clear slot selection if it was in the cleared measure
-        if (this.targetChordIndex !== null && 
-            this.targetChordIndex >= startIndex && 
-            this.targetChordIndex < endIndex) {
-            this.clearSlotSelection();
         }
 
         // Update the display
         this.displayChords();
 
         // Show status message
-        this.showStatus(`Cleared measure ${measureNumber} (${clearedCount} chord slots emptied)`);
+        const newTotalMeasures = Math.ceil(this.chordProgression.length / chordsPerMeasure);
+        this.showStatus(`Deleted measure ${measureNumber}. Total measures: ${totalMeasures} → ${newTotalMeasures}`);
     }
 
     /**

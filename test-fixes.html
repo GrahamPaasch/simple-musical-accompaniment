@@ -93,7 +93,7 @@
     </div>
 
     <div class="test-section">
-        <h3>Test 2: Measure Deletion (Clear without shifting)</h3>
+        <h3>Test 2: Measure Deletion (Remove entire measure)</h3>
         <div class="test-step">
             <strong>Step 2.1:</strong> Load a preset with multiple measures
         </div>
@@ -106,9 +106,10 @@
         <div class="test-step">
             <strong>Step 2.4:</strong> Verify that:
             <ul>
-                <li>All slots in the first measure become empty (show "+" icons)</li>
-                <li>Subsequent measures remain in their positions</li>
-                <li>No measures have been removed or shifted</li>
+                <li>The entire first measure is removed from the progression</li>
+                <li>Subsequent measures shift left to fill the gap</li>
+                <li>Measure numbers update correctly (what was measure 2 becomes measure 1, etc.)</li>
+                <li>Total measure count decreases by one</li>
             </ul>
         </div>
     </div>
