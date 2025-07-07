@@ -1229,9 +1229,6 @@ class MusicalAccompanist {
             if (measureElement) {
                 measureElement.classList.add('current-measure');
             }
-            
-            // Scroll into view if needed
-            currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
 
