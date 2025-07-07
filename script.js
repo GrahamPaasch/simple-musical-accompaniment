@@ -832,9 +832,9 @@ class MusicalAccompanist {
             });
             measureElement.appendChild(measureDeleteBtn);
             
-            // Check if this measure contains the current chord
+            // Check if this measure contains the current chord (only during playback)
             const currentMeasureIndices = this.getMeasureIndices(this.currentChordIndex);
-            if (currentMeasureIndices && currentMeasureIndices.measureIndex === measureIndex) {
+            if (this.isPlaying && currentMeasureIndices && currentMeasureIndices.measureIndex === measureIndex) {
                 measureElement.classList.add('current-measure');
             }
             
@@ -852,11 +852,34 @@ class MusicalAccompanist {
                     
                     // Make empty slots clickable to select for piano input
                     chordElement.addEventListener('click', () => {
+                        // If the slot is beyond current progression, extend the progression
+                        if (globalChordIndex >= this.chordProgression.length) {
+                            // Extend progression with empty slots up to this index
+                            while (this.chordProgression.length <= globalChordIndex) {
+                                this.chordProgression.push({
+                                    name: '',
+                                    notes: [],
+                                    duration: '1n',
+                                    isEmpty: true
+                                });
+                            }
+                        }
                         this.selectSlotForPiano(globalChordIndex);
                     });
                     
                     // Add right-click context menu for options
                     chordElement.addEventListener('contextmenu', (e) => {
+                        // If the slot is beyond current progression, extend the progression
+                        if (globalChordIndex >= this.chordProgression.length) {
+                            while (this.chordProgression.length <= globalChordIndex) {
+                                this.chordProgression.push({
+                                    name: '',
+                                    notes: [],
+                                    duration: '1n',
+                                    isEmpty: true
+                                });
+                            }
+                        }
                         this.showEmptySlotMenu(e, globalChordIndex);
                     });
                 } else if (chord.isRest) {
@@ -1215,6 +1238,11 @@ class MusicalAccompanist {
             measure.classList.remove('current-measure');
         });
         
+        // Only highlight during playback
+        if (!this.isPlaying) {
+            return;
+        }
+        
         // Highlight current chord
         const currentItem = document.querySelector(`[data-index="${this.currentChordIndex}"]`);
         if (currentItem) {
@@ -1263,6 +1291,9 @@ class MusicalAccompanist {
         // Clear highlights
         document.querySelectorAll('.chord-item').forEach(item => {
             item.classList.remove('current');
+        });
+        document.querySelectorAll('.measure').forEach(measure => {
+            measure.classList.remove('current-measure');
         });
         
         // Update UI
@@ -2092,20 +2123,7 @@ class MusicalAccompanist {
      * Update progression information display
      */
     updateProgressionInfo() {
-        const lengthElement = document.getElementById('progression-length');
-        const durationElement = document.getElementById('progression-duration');
-        
-        if (lengthElement) {
-            const count = this.chordProgression.length;
-            lengthElement.textContent = `${count} chord${count !== 1 ? 's' : ''}`;
-        }
-        
-        if (durationElement) {
-            const durationSeconds = this.chordProgression.length * (60 / this.tempo);
-            const minutes = Math.floor(durationSeconds / 60);
-            const seconds = Math.floor(durationSeconds % 60);
-            durationElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
+        // Progression info display removed - no longer needed
     }
 }
 
