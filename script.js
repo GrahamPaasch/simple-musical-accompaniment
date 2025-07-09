@@ -28,6 +28,16 @@ class MusicalAccompanist {
         this.showChordFunctions = false; // For showing Roman numeral functions
         this.key = { tonic: 'C', mode: 'major' }; // Current key signature
 
+        // Navigation markers for musical repeats
+        this.dsMarkers = [];
+        this.dcMarkers = [];
+        this.toCodaIndices = [];
+        this.segnoIndex = null;
+        this.codaIndex = null;
+        this.fineIndex = null;
+        this.dsJumped = false;
+        this.dcJumped = false;
+
         // Note mapping utilities for roman numeral parsing
         this.indexToNote = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
         this.noteToIndex = {
@@ -35,8 +45,25 @@ class MusicalAccompanist {
             'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11
         };
         
-        // Initialize audio context
-        this.initializeAudio();
+        // Flag to track if audio has been initialized
+        this.audioInitialized = false;
+        
+        // Add comprehensive debugging
+        console.log('=== CONSTRUCTOR DEBUG ===');
+        console.log('Tone object exists:', typeof Tone !== 'undefined');
+        console.log('Tone.context exists:', typeof Tone.context !== 'undefined');
+        console.log('Tone.context.state:', Tone.context ? Tone.context.state : 'undefined');
+        console.log('========================');
+        
+        // Check initial AudioContext state
+        console.log('Initial Tone.context state:', Tone.context.state);
+        
+        // Show appropriate initial status
+        if (Tone.context.state === 'suspended') {
+            this.showStatus('Audio suspended - Click Play to enable audio');
+        } else {
+            this.showStatus('Audio ready');
+        }
         
         // Bind event handlers
         this.bindEvents();
@@ -47,9 +74,12 @@ class MusicalAccompanist {
 
     /**
      * Initialize the audio system using Tone.js
+     * Note: This only creates synths, doesn't start AudioContext
      */
     async initializeAudio() {
         try {
+            console.log('initializeAudio called, context state:', Tone.context.state);
+            
             // Create polyphonic synthesizer for chords
             this.synth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: {
@@ -74,11 +104,66 @@ class MusicalAccompanist {
             this.synth.volume.value = this.volumeToDb(this.volume);
             this.metronome.volume.value = this.volumeToDb(0.3);
 
-            console.log('Audio initialized successfully');
+            console.log('Synths created successfully');
+            
         } catch (error) {
             console.error('Error initializing audio:', error);
             this.showStatus('Error initializing audio. Please check your browser settings.');
+            throw error;
         }
+    }
+
+    /**
+     * Ensure audio context and synths are ready after a user gesture
+     */
+    async ensureAudioInitialized() {
+        console.log('=== ENSUREAUDOINITIALIZED CALLED ===');
+        try {
+            console.log('ensureAudioInitialized called, current state:', Tone.context.state);
+            
+            // First, handle the suspended AudioContext (this is the key fix)
+            if (Tone.context.state === 'suspended') {
+                console.log('AudioContext is suspended, attempting to resume...');
+                await Tone.context.resume();
+                console.log('Tone.context.resume() completed, new state:', Tone.context.state);
+            } else {
+                console.log('AudioContext state is not suspended, it is:', Tone.context.state);
+            }
+            
+            // Then ensure Tone.js transport is started
+            if (Tone.context.state !== 'running') {
+                console.log('Context not running, calling Tone.start()...');
+                await Tone.start();
+                console.log('Tone.start() completed, final state:', Tone.context.state);
+            } else {
+                console.log('Context is already running');
+            }
+            
+            // Finally, initialize our synths if not already done
+            if (!this.audioInitialized) {
+                console.log('Audio not initialized, calling initializeAudio()...');
+                await this.initializeAudio();
+                this.audioInitialized = true;
+                console.log('initializeAudio() completed');
+            } else {
+                console.log('Audio already initialized');
+            }
+            
+            // Update status once audio is ready
+            if (Tone.context.state === 'running') {
+                this.showStatus('Audio ready');
+                console.log('Audio is ready, status updated');
+            } else {
+                console.log('Audio context state is still not running:', Tone.context.state);
+            }
+            
+        } catch (error) {
+            console.error('Error in ensureAudioInitialized:', error);
+            console.error('Error stack:', error.stack);
+            this.showStatus('Audio initialization failed');
+            throw error;
+        }
+        console.log('=== ENSUREAUDOINITIALIZED DONE ===');
     }
 
     /**
@@ -135,8 +220,16 @@ class MusicalAccompanist {
         });
 
         // Playback controls
-        document.getElementById('play-btn').addEventListener('click', () => {
-            this.startPlayback();
+        document.getElementById('play-btn').addEventListener('click', async () => {
+            console.log('=== PLAY BUTTON CLICKED ===');
+            console.log('About to call startPlayback()');
+            try {
+                await this.startPlayback();
+                console.log('startPlayback() completed successfully');
+            } catch (error) {
+                console.error('Error in play button handler:', error);
+            }
+            console.log('=== PLAY BUTTON HANDLER DONE ===');
         });
 
         document.getElementById('pause-btn').addEventListener('click', () => {
@@ -149,15 +242,15 @@ class MusicalAccompanist {
 
         // Piano keyboard events
         document.querySelectorAll('.key').forEach(key => {
-            key.addEventListener('click', (e) => {
+            key.addEventListener('click', async (e) => {
                 const note = e.target.dataset.note;
-                this.toggleNote(note, e.target);
+                await this.toggleNote(note, e.target);
             });
         });
 
         // Piano control buttons
-        document.getElementById('play-selected').addEventListener('click', () => {
-            this.playSelectedNotes();
+        document.getElementById('play-selected').addEventListener('click', async () => {
+            await this.playSelectedNotes();
         });
 
         document.getElementById('clear-selection').addEventListener('click', () => {
@@ -1157,8 +1250,8 @@ class MusicalAccompanist {
                     });
                     chordElement.appendChild(chordDeleteBtn);
                     
-                    chordElement.addEventListener('click', () => {
-                        this.previewChord(chord);
+                    chordElement.addEventListener('click', async () => {
+                        await this.previewChord(chord);
                     });
                     
                     // Add right-click context menu
@@ -1265,37 +1358,48 @@ class MusicalAccompanist {
     /**
      * Preview a single chord by playing it briefly
      */
-    previewChord(chord) {
-        if (!this.synth) {
-            return;
+    async previewChord(chord) {
+        try {
+            // Ensure audio context is ready
+            await this.ensureAudioInitialized();
+            
+            // Get frequencies for the chord
+            const frequencies = this.getChordFrequencies(chord);
+            
+            // Play the chord briefly
+            this.synth.releaseAll();
+            frequencies.forEach(freq => {
+                this.synth.triggerAttackRelease(freq, '2n');
+            });
+            
+            this.showStatus(`Previewing: ${chord.name}`);
+        } catch (error) {
+            console.error('Error previewing chord:', error);
+            this.showStatus('Error previewing chord');
         }
-        
-        // Get frequencies for the chord
-        const frequencies = this.getChordFrequencies(chord);
-        
-        // Play the chord briefly
-        this.synth.releaseAll();
-        frequencies.forEach(freq => {
-            this.synth.triggerAttackRelease(freq, '2n');
-        });
-        
-        this.showStatus(`Previewing: ${chord.name}`);
     }
 
     /**
      * Start playback
      */
     async startPlayback() {
+        console.log('=== STARTPLAYBACK CALLED ===');
+        console.log('Chord progression length:', this.chordProgression.length);
+        
         if (this.chordProgression.length === 0) {
             this.showStatus('No chords to play');
+            console.log('No chords to play, returning early');
             return;
         }
 
         try {
-            // Start Tone.js context if needed
-            if (Tone.context.state !== 'running') {
-                await Tone.start();
-            }
+            console.log('Starting playback...');
+            console.log('Current AudioContext state:', Tone.context.state);
+            
+            // Ensure audio context is ready (this handles AudioContext resumption)
+            console.log('About to call ensureAudioInitialized()');
+            await this.ensureAudioInitialized();
+            console.log('ensureAudioInitialized() completed');
 
             this.isPlaying = true;
             this.isPaused = false;
@@ -1316,7 +1420,7 @@ class MusicalAccompanist {
             this.showStatus('Playing...');
         } catch (error) {
             console.error('Error starting playback:', error);
-            this.showStatus('Error starting playback');
+            this.showStatus('Error starting playback. Please try again.');
             this.stopPlayback();
         }
     }
@@ -1433,6 +1537,14 @@ class MusicalAccompanist {
     resetNavigationState() {
         this.dsJumped = false;
         this.dcJumped = false;
+        
+        // Initialize navigation marker arrays
+        this.dsMarkers = this.dsMarkers || [];
+        this.dcMarkers = this.dcMarkers || [];
+        this.toCodaIndices = this.toCodaIndices || [];
+        this.segnoIndex = this.segnoIndex || null;
+        this.codaIndex = this.codaIndex || null;
+        this.fineIndex = this.fineIndex || null;
     }
 
     /**
@@ -1582,7 +1694,7 @@ class MusicalAccompanist {
     /**
      * Toggle a note selection on the piano keyboard
      */
-    toggleNote(note, keyElement) {
+    async toggleNote(note, keyElement) {
         const index = this.selectedNotes.indexOf(note);
         
         if (index > -1) {
@@ -1598,9 +1710,12 @@ class MusicalAccompanist {
         this.updateSelectedNotesDisplay();
         
         // Play the note briefly
-        if (this.synth) {
+        try {
+            await this.ensureAudioInitialized();
             const frequency = Tone.Frequency(note).toFrequency();
             this.synth.triggerAttackRelease(frequency, '8n');
+        } catch (error) {
+            console.error('Error playing note:', error);
         }
     }
 
@@ -1627,22 +1742,30 @@ class MusicalAccompanist {
     /**
      * Play the currently selected notes
      */
-    playSelectedNotes() {
-        if (!this.synth || this.selectedNotes.length === 0) {
+    async playSelectedNotes() {
+        if (this.selectedNotes.length === 0) {
             this.showStatus('No notes selected');
             return;
         }
         
-        // Stop any playing notes
-        this.synth.releaseAll();
-        
-        // Play selected notes
-        this.selectedNotes.forEach(note => {
-            const frequency = Tone.Frequency(note).toFrequency();
-            this.synth.triggerAttackRelease(frequency, '2n');
-        });
-        
-        this.showStatus(`Playing ${this.selectedNotes.length} notes`);
+        try {
+            // Ensure audio context is ready
+            await this.ensureAudioInitialized();
+            
+            // Stop any playing notes
+            this.synth.releaseAll();
+            
+            // Play selected notes
+            this.selectedNotes.forEach(note => {
+                const frequency = Tone.Frequency(note).toFrequency();
+                this.synth.triggerAttackRelease(frequency, '2n');
+            });
+            
+            this.showStatus(`Playing ${this.selectedNotes.length} notes`);
+        } catch (error) {
+            console.error('Error playing notes:', error);
+            this.showStatus('Error playing notes');
+        }
     }
 
     /**
