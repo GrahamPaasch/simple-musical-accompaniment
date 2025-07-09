@@ -667,19 +667,71 @@ class MusicalAccompanist {
      */
     parseChordString(input) {
         const chords = [];
-        const parts = input.split(/[\s|]+/).filter(part => part.trim());
-        
-        for (const part of parts) {
-            const chord = this.parseChord(part.trim());
-            if (chord) {
-                chords.push(chord);
+
+        // Navigation marker indices
+        this.segnoIndex = null;
+        this.codaIndex = null;
+        this.toCodaIndices = [];
+        this.dsMarkers = [];
+        this.dcMarkers = [];
+        this.fineIndex = null;
+
+        // Tokenize keeping navigation symbols intact
+        const tokens = input.match(/\|:|:\|x?\d*|SEGNO|CODA|TOCODA|DS|DC|FINE|[^\s]+/gi) || [];
+
+        const repeatStack = [];
+
+        for (const rawToken of tokens) {
+            const token = rawToken.trim();
+
+            if (token === '|:') {
+                repeatStack.push(chords.length);
+                continue;
+            }
+
+            if (token.startsWith(':|')) {
+                const repeatCount = parseInt(token.slice(2).replace(/^x/, '')) || 2;
+                const start = repeatStack.pop() ?? 0;
+                const section = chords.slice(start);
+                for (let i = 1; i < repeatCount; i++) {
+                    chords.push(...section);
+                }
+                continue;
+            }
+
+            switch (token.toUpperCase()) {
+                case 'SEGNO':
+                    this.segnoIndex = chords.length;
+                    continue;
+                case 'CODA':
+                    this.codaIndex = chords.length;
+                    continue;
+                case 'TOCODA':
+                    this.toCodaIndices.push(chords.length);
+                    continue;
+                case 'DS':
+                    this.dsMarkers.push(chords.length);
+                    continue;
+                case 'DC':
+                    this.dcMarkers.push(chords.length);
+                    continue;
+                case 'FINE':
+                    this.fineIndex = chords.length;
+                    continue;
+                case '|':
+                    continue;
+                default:
+                    const chord = this.parseChord(token);
+                    if (chord) {
+                        chords.push(chord);
+                    }
             }
         }
-        
+
         if (chords.length === 0) {
             throw new Error('No valid chords found');
         }
-        
+
         return chords;
     }
 
@@ -1073,6 +1125,7 @@ class MusicalAccompanist {
             this.isPlaying = true;
             this.isPaused = false;
             this.currentChordIndex = 0;
+            this.resetNavigationState();
             
             // Update UI
             document.getElementById('play-btn').disabled = true;
@@ -1098,7 +1151,33 @@ class MusicalAccompanist {
      */
     schedulePlayback() {
         if (!this.isPlaying) return;
-        
+        // Handle navigation markers before playing a chord
+        while (true) {
+            if (this.fineIndex !== null && this.currentChordIndex >= this.fineIndex) {
+                this.stopPlayback();
+                return;
+            }
+
+            if (this.dsMarkers.includes(this.currentChordIndex) && !this.dsJumped) {
+                this.dsJumped = true;
+                this.currentChordIndex = this.segnoIndex ?? 0;
+                continue;
+            }
+
+            if (this.dcMarkers.includes(this.currentChordIndex) && !this.dcJumped) {
+                this.dcJumped = true;
+                this.currentChordIndex = 0;
+                continue;
+            }
+
+            if (this.toCodaIndices.includes(this.currentChordIndex) && this.codaIndex !== null) {
+                this.currentChordIndex = this.codaIndex;
+                continue;
+            }
+
+            break;
+        }
+
         const currentChord = this.chordProgression[this.currentChordIndex];
         
         // Highlight current chord
@@ -1137,15 +1216,24 @@ class MusicalAccompanist {
      */
     moveToNextChord() {
         this.currentChordIndex++;
-        
+
         if (this.currentChordIndex >= this.chordProgression.length) {
             if (this.loopMode) {
                 this.currentChordIndex = 0;
+                this.resetNavigationState();
             } else {
                 this.stopPlayback();
                 return;
             }
         }
+    }
+
+    /**
+     * Reset navigation jump flags
+     */
+    resetNavigationState() {
+        this.dsJumped = false;
+        this.dcJumped = false;
     }
 
     /**
