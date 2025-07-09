@@ -20,11 +20,20 @@ class MusicalAccompanist {
         this.selectedNotes = []; // For piano keyboard
         this.targetChordIndex = null; // Track which slot to fill with piano selection
         this.timeSignature = 4; // Default to 4/4 time
+        this.measureTimeSignatures = []; // Per-measure time signatures
         this.draggedFromIndex = null;
         this.contextChordIndex = null; // For context menu
         this.editingChordIndex = null; // For chord editing
         this.showChordNotes = false; // For showing notes above chords
         this.showChordFunctions = false; // For showing Roman numeral functions
+        this.key = { tonic: 'C', mode: 'major' }; // Current key signature
+
+        // Note mapping utilities for roman numeral parsing
+        this.indexToNote = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        this.noteToIndex = {
+            'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,
+            'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11
+        };
         
         // Initialize audio context
         this.initializeAudio();
@@ -99,8 +108,30 @@ class MusicalAccompanist {
             this.showStatus(`Time signature changed to: ${this.timeSignature}/4`);
         });
 
+        // Key signature controls
+        const tonicSelect = document.getElementById('key-tonic');
+        const modeSelect = document.getElementById('key-mode');
+        if (tonicSelect && modeSelect) {
+            tonicSelect.addEventListener('change', (e) => {
+                this.key.tonic = e.target.value;
+                this.displayChords();
+                this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
+            });
+
+            modeSelect.addEventListener('change', (e) => {
+                this.key.mode = e.target.value;
+                this.displayChords();
+                this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
+            });
+        }
+
         document.getElementById('loop').addEventListener('change', (e) => {
             this.loopMode = e.target.checked;
+        });
+
+        document.getElementById('metronome-toggle').addEventListener('change', (e) => {
+            this.metronomeEnabled = e.target.checked;
+            this.showStatus(`Metronome ${this.metronomeEnabled ? 'On' : 'Off'}`);
         });
 
         // Playback controls
@@ -681,6 +712,11 @@ class MusicalAccompanist {
 
         const repeatStack = [];
 
+        // Reset measure time signatures
+        this.measureTimeSignatures = [];
+        let currentSig = this.timeSignature;
+        let chordsInMeasure = 0;
+
         for (const rawToken of tokens) {
             const token = rawToken.trim();
 
@@ -696,6 +732,19 @@ class MusicalAccompanist {
                 for (let i = 1; i < repeatCount; i++) {
                     chords.push(...section);
                 }
+                continue;
+            }
+
+            // Check for time signature change token (e.g. "3/4")
+            if (/^\d+\/\d+$/.test(token)) {
+                // If we have started a measure, finalize it
+                if (chordsInMeasure > 0) {
+                    this.measureTimeSignatures.push(currentSig);
+                    chordsInMeasure = 0;
+                }
+                
+                const [numerator] = token.split('/').map(Number);
+                currentSig = numerator;
                 continue;
             }
 
@@ -754,8 +803,20 @@ class MusicalAccompanist {
                     const chord = this.parseChord(token);
                     if (chord) {
                         chords.push(chord);
+                        chordsInMeasure++;
+                        
+                        // Check if measure is complete
+                        if (chordsInMeasure === currentSig) {
+                            this.measureTimeSignatures.push(currentSig);
+                            chordsInMeasure = 0;
+                        }
                     }
             }
+        }
+
+        // Handle any remaining partial measure
+        if (chordsInMeasure > 0) {
+            this.measureTimeSignatures.push(currentSig);
         }
 
         if (chords.length === 0) {
@@ -777,6 +838,12 @@ class MusicalAccompanist {
         // Check if it's a single note (note name with optional octave)
         if (this.isSingleNote(chordName)) {
             return this.parseSingleNote(chordName);
+        }
+
+        // Check for Roman numeral or scale degree input
+        const romanChord = this.parseRomanNumeralChord(chordName);
+        if (romanChord) {
+            return romanChord;
         }
 
         // Basic chord parsing - supports major, minor, 7th chords
@@ -850,6 +917,84 @@ class MusicalAccompanist {
             notes: notes,
             duration: '1n'
         };
+    }
+
+    /**
+     * Parse Roman numeral chord notation
+     */
+    parseRomanNumeralChord(chordName) {
+        // Roman numeral patterns: I, ii, iii, IV, V, vi, vii°
+        const romanPattern = /^([IVX]+|[ivx]+)([°o]?)([7]?)$/i;
+        const match = chordName.match(romanPattern);
+        
+        if (!match) return null;
+        
+        const romanNumeral = match[1];
+        const isDiminished = match[2] !== '';
+        const isSeventh = match[3] !== '';
+        
+        // Convert Roman numeral to scale degree (0-based)
+        const romanToScale = {
+            'I': 0, 'i': 0,
+            'II': 1, 'ii': 1,
+            'III': 2, 'iii': 2,
+            'IV': 3, 'iv': 3,
+            'V': 4, 'v': 4,
+            'VI': 5, 'vi': 5,
+            'VII': 6, 'vii': 6
+        };
+        
+        const scaleDegree = romanToScale[romanNumeral.toUpperCase()];
+        if (scaleDegree === undefined) return null;
+        
+        // Get the root note based on key and scale degree
+        const keyIndex = this.noteToIndex[this.key.tonic];
+        
+        // Scale intervals (major/minor)
+        const majorScale = [0, 2, 4, 5, 7, 9, 11];
+        const minorScale = [0, 2, 3, 5, 7, 8, 10];
+        const scale = this.key.mode === 'major' ? majorScale : minorScale;
+        
+        const rootIndex = (keyIndex + scale[scaleDegree]) % 12;
+        const rootNote = this.indexToNote[rootIndex];
+        
+        // Determine chord quality from Roman numeral case and key context
+        let chordType = '';
+        const isUpperCase = romanNumeral === romanNumeral.toUpperCase();
+        
+        if (isDiminished) {
+            chordType = 'dim';
+        } else if (this.key.mode === 'major') {
+            // In major keys: I, IV, V are major; ii, iii, vi are minor
+            if ([0, 3, 4].includes(scaleDegree)) {
+                chordType = '';  // major
+            } else {
+                chordType = 'm'; // minor
+            }
+        } else {
+            // In minor keys: i, iv, v are minor; III, VI, VII are major
+            if ([0, 3, 4].includes(scaleDegree)) {
+                chordType = 'm'; // minor
+            } else {
+                chordType = '';  // major
+            }
+        }
+        
+        if (isSeventh) {
+            chordType += '7';
+        }
+        
+        // Build the actual chord name
+        const actualChordName = rootNote + chordType;
+        
+        // Parse the actual chord and modify its name to show the Roman numeral
+        const chord = this.parseChord(actualChordName);
+        if (chord) {
+            chord.name = chordName; // Keep the original Roman numeral name
+            chord.actualChord = actualChordName; // Store the actual chord name
+        }
+        
+        return chord;
     }
 
     /**
@@ -1333,8 +1478,9 @@ class MusicalAccompanist {
      */
     playMetronome() {
         if (!this.metronome) return;
-        
-        this.metronome.triggerAttackRelease('C6', '32n');
+        const isDownbeat = (this.currentChordIndex % this.timeSignature === 0);
+        const pitch = isDownbeat ? 'C5' : 'C6';
+        this.metronome.triggerAttackRelease(pitch, '32n');
     }
 
     /**

@@ -334,6 +334,19 @@ section h2 {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+.measure-time-signature {
+    position: absolute;
+    top: -10px;
+    right: 35px;
+    background: #6c757d;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
 .measure.current-measure .measure-number {
     background: #007bff;
     box-shadow: 0 2px 6px rgba(0,123,255,0.3);
