@@ -103,6 +103,11 @@ class MusicalAccompanist {
             this.loopMode = e.target.checked;
         });
 
+        document.getElementById('metronome-toggle').addEventListener('change', (e) => {
+            this.metronomeEnabled = e.target.checked;
+            this.showStatus(`Metronome ${this.metronomeEnabled ? 'On' : 'Off'}`);
+        });
+
         // Playback controls
         document.getElementById('play-btn').addEventListener('click', () => {
             this.startPlayback();
@@ -1191,8 +1196,9 @@ class MusicalAccompanist {
      */
     playMetronome() {
         if (!this.metronome) return;
-        
-        this.metronome.triggerAttackRelease('C6', '32n');
+        const isDownbeat = (this.currentChordIndex % this.timeSignature === 0);
+        const pitch = isDownbeat ? 'C5' : 'C6';
+        this.metronome.triggerAttackRelease(pitch, '32n');
     }
 
     /**
