@@ -25,6 +25,14 @@ class MusicalAccompanist {
         this.editingChordIndex = null; // For chord editing
         this.showChordNotes = false; // For showing notes above chords
         this.showChordFunctions = false; // For showing Roman numeral functions
+        this.key = { tonic: 'C', mode: 'major' }; // Current key signature
+
+        // Note mapping utilities for roman numeral parsing
+        this.indexToNote = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        this.noteToIndex = {
+            'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,
+            'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11
+        };
         
         // Initialize audio context
         this.initializeAudio();
@@ -98,6 +106,23 @@ class MusicalAccompanist {
             this.displayChords(); // Refresh the display with new time signature
             this.showStatus(`Time signature changed to: ${this.timeSignature}/4`);
         });
+
+        // Key signature controls
+        const tonicSelect = document.getElementById('key-tonic');
+        const modeSelect = document.getElementById('key-mode');
+        if (tonicSelect && modeSelect) {
+            tonicSelect.addEventListener('change', (e) => {
+                this.key.tonic = e.target.value;
+                this.displayChords();
+                this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
+            });
+
+            modeSelect.addEventListener('change', (e) => {
+                this.key.mode = e.target.value;
+                this.displayChords();
+                this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
+            });
+        }
 
         document.getElementById('loop').addEventListener('change', (e) => {
             this.loopMode = e.target.checked;
@@ -697,6 +722,12 @@ class MusicalAccompanist {
             return this.parseSingleNote(chordName);
         }
 
+        // Check for Roman numeral or scale degree input
+        const romanChord = this.parseRomanNumeralChord(chordName);
+        if (romanChord) {
+            return romanChord;
+        }
+
         // Basic chord parsing - supports major, minor, 7th chords
         const chordPatterns = {
             // Major chords
@@ -768,6 +799,126 @@ class MusicalAccompanist {
             notes: notes,
             duration: '1n'
         };
+    }
+
+    /**
+     * Parse a Roman numeral or scale degree into a chord
+     */
+    parseRomanNumeralChord(input) {
+        const romanMatch = input.match(/^([IViv]+)(?:[o°])?(7)?$/);
+        const degreeMatch = input.match(/^([1-7])(o|°)?(7)?$/);
+        let degree, quality, add7 = false;
+
+        if (romanMatch) {
+            degree = this.romanToDegree(romanMatch[1]);
+            if (!degree) return null;
+            quality = romanMatch[1] === romanMatch[1].toUpperCase() ? 'major' : 'minor';
+            if (/[o°]/.test(input)) quality = 'diminished';
+            add7 = !!romanMatch[2];
+        } else if (degreeMatch) {
+            degree = parseInt(degreeMatch[1]);
+            quality = this.getScaleDegreeQuality(degree, this.key.mode);
+            if (degreeMatch[2]) quality = 'diminished';
+            add7 = !!degreeMatch[3];
+        } else {
+            return null;
+        }
+
+        const scale = this.getScaleNotes(this.key.tonic, this.key.mode);
+        const root = scale[degree - 1];
+        const notes = this.buildChordFromRoot(root, quality, add7);
+        return { name: input, notes, duration: '1n' };
+    }
+
+    getScaleNotes(tonic, mode) {
+        const major = [0,2,4,5,7,9,11];
+        const minor = [0,2,3,5,7,8,10];
+        const pattern = mode === 'minor' ? minor : major;
+        const rootIndex = this.noteToIndex[this.standardizePitchName(tonic)];
+        return pattern.map(i => this.indexToNote[(rootIndex + i) % 12]);
+    }
+
+    standardizePitchName(name) {
+        const map = { 'Db':'C#','Eb':'D#','Gb':'F#','Ab':'G#','Bb':'A#' };
+        return map[name] || name;
+    }
+
+    buildChordFromRoot(root, quality, add7) {
+        let intervals;
+        if (quality === 'diminished') intervals = [0,3,6];
+        else if (quality === 'minor') intervals = [0,3,7];
+        else intervals = [0,4,7];
+
+        const notes = intervals.map(semi => this.transposeNote(root, semi));
+        if (add7) notes.push(this.transposeNote(root, 10));
+        return notes;
+    }
+
+    transposeNote(noteName, semitones) {
+        const baseIndex = this.noteToIndex[this.standardizePitchName(noteName)];
+        const newIndex = baseIndex + semitones;
+        const octave = 4 + Math.floor(newIndex / 12);
+        const note = this.indexToNote[newIndex % 12];
+        return note + octave;
+    }
+
+    romanToDegree(numeral) {
+        const map = { 'I':1,'II':2,'III':3,'IV':4,'V':5,'VI':6,'VII':7 };
+        return map[numeral.toUpperCase()] || null;
+    }
+
+    getScaleDegreeQuality(deg, mode) {
+        const majorQual = ['major','minor','minor','major','major','minor','diminished'];
+        const minorQual = ['minor','diminished','major','minor','minor','major','major'];
+        return (mode === 'minor' ? minorQual : majorQual)[deg - 1];
+    }
+
+    getRomanNumeral(chord) {
+        if (!chord || !chord.notes || chord.notes.length === 0) return '';
+        const root = chord.notes[0].replace(/\d+$/, '');
+        const scale = this.getScaleNotes(this.key.tonic, this.key.mode).map(n => this.noteToIndex[n]);
+        const rootIndex = this.noteToIndex[this.standardizePitchName(root)];
+        const deg = scale.indexOf(rootIndex);
+        if (deg === -1) return chord.name;
+
+        let numeral = ['I','II','III','IV','V','VI','VII'][deg];
+
+        // Determine quality from chord name
+        let quality = 'major';
+        if (/dim|°|o/.test(chord.name)) quality = 'diminished';
+        else if (/m(?!a)/i.test(chord.name)) quality = 'minor';
+
+        if (quality === 'minor') numeral = numeral.toLowerCase();
+        if (quality === 'diminished') numeral = numeral.toLowerCase() + '°';
+        if (/7$/.test(chord.name) || chord.notes.length === 4) numeral += '7';
+
+        return numeral;
+    }
+
+    // Basic helpers for custom chords and single notes
+    isSingleNote(name) {
+        return /^[A-G](#|b)?\d?$/.test(name);
+    }
+
+    parseSingleNote(name) {
+        const base = name.replace(/\d+/, '');
+        const octaveMatch = name.match(/\d+/);
+        const octave = octaveMatch ? octaveMatch[0] : '4';
+        const note = this.standardizePitchName(base) + octave;
+        return { name: base, notes: [note], duration: '1n', isSingleNote: true };
+    }
+
+    parseCustomChord(name) {
+        const parts = name.split('-').map(p => p.trim()).filter(p => p);
+        const notes = [];
+        for (const p of parts) {
+            const base = p.replace(/\d+/, '');
+            if (!(this.standardizePitchName(base) in this.noteToIndex)) return null;
+            const octave = p.match(/\d+/)?.[0] || '4';
+            notes.push(this.standardizePitchName(base) + octave);
+        }
+        if (notes.length === 0) return null;
+        return { name, notes, duration: '1n', isCustom: true };
     }
 
     /**
@@ -891,7 +1042,7 @@ class MusicalAccompanist {
                     if (this.showChordFunctions) {
                         const functionDiv = document.createElement('div');
                         functionDiv.className = 'chord-function';
-                        functionDiv.textContent = chord.name; // Simple display without analysis
+                        functionDiv.textContent = this.getRomanNumeral(chord);
                         chordElement.appendChild(functionDiv);
                     }
                 }
