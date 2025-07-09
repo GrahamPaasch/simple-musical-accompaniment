@@ -668,18 +668,50 @@ class MusicalAccompanist {
     parseChordString(input) {
         const chords = [];
         const parts = input.split(/[\s|]+/).filter(part => part.trim());
-        
+
         for (const part of parts) {
-            const chord = this.parseChord(part.trim());
+            const token = part.trim();
+
+            // Tempo change e.g. Tempo120 or [Tempo=120]
+            let match = token.match(/^\[?Tempo=?([0-9]+)\]?$/i);
+            if (match) {
+                const bpm = parseInt(match[1]);
+                chords.push({
+                    type: 'tempo',
+                    bpm,
+                    name: `Tempo=${bpm}`,
+                    notes: [],
+                    isTempoEvent: true
+                });
+                continue;
+            }
+
+            // Accelerando/Ritardando e.g. Accel=120:4 or Accel->120:4
+            match = token.match(/^\[?Accel(?:->|=)?([0-9]+):([0-9]+)\]?$/i);
+            if (match) {
+                const target = parseInt(match[1]);
+                const measures = parseInt(match[2]);
+                chords.push({
+                    type: 'accel',
+                    target,
+                    measures,
+                    name: `Accel ${target}:${measures}`,
+                    notes: [],
+                    isTempoEvent: true
+                });
+                continue;
+            }
+
+            const chord = this.parseChord(token);
             if (chord) {
                 chords.push(chord);
             }
         }
-        
+
         if (chords.length === 0) {
             throw new Error('No valid chords found');
         }
-        
+
         return chords;
     }
 
@@ -1098,31 +1130,57 @@ class MusicalAccompanist {
      */
     schedulePlayback() {
         if (!this.isPlaying) return;
-        
-        const currentChord = this.chordProgression[this.currentChordIndex];
-        
+
+        const current = this.chordProgression[this.currentChordIndex];
+
+        // Handle tempo change events
+        if (current && current.type === 'tempo') {
+            this.tempo = current.bpm;
+            Tone.Transport.bpm.value = this.tempo;
+            document.getElementById('tempo').value = this.tempo;
+            document.getElementById('tempo-display').textContent = this.tempo;
+
+            this.moveToNextChord();
+            if (this.isPlaying) this.schedulePlayback();
+            return;
+        }
+
+        if (current && current.type === 'accel') {
+            const rampDuration = current.measures * this.timeSignature * (60 / Tone.Transport.bpm.value);
+            Tone.Transport.bpm.rampTo(current.target, rampDuration);
+            this.tempo = current.target;
+            document.getElementById('tempo').value = current.target;
+            document.getElementById('tempo-display').textContent = current.target;
+
+            this.moveToNextChord();
+            if (this.isPlaying) this.schedulePlayback();
+            return;
+        }
+
+        const currentChord = current;
+
         // Highlight current chord
         this.highlightCurrentChord();
-        
+
         // Get frequencies for current chord
         const frequencies = this.getChordFrequencies(currentChord);
-        
+
         // Play the chord
         this.playChord(frequencies, currentChord);
-        
+
         // Update status
         this.showStatus(`Playing: ${currentChord.name}`);
         document.getElementById('current-chord-display').textContent = currentChord.name;
-        
+
         // Play metronome if enabled and not a drone
         if (this.metronomeEnabled && !currentChord.isDrone) {
             this.playMetronome();
         }
-        
+
         // Schedule next chord or loop
         if (!currentChord.isDrone) {
-            const nextTime = 60000 / this.tempo; // Time to next beat in milliseconds
-            
+            const nextTime = 60000 / Tone.Transport.bpm.value;
+
             setTimeout(() => {
                 this.moveToNextChord();
                 if (this.isPlaying) {
