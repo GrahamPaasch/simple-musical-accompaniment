@@ -28,7 +28,15 @@ class MusicalAccompanist {
         this.showChordFunctions = false; // For showing Roman numeral functions
         this.key = { tonic: 'C', mode: 'major' }; // Current key signature
 
-
+        // Navigation markers for musical repeats
+        this.dsMarkers = [];
+        this.dcMarkers = [];
+        this.toCodaIndices = [];
+        this.segnoIndex = null;
+        this.codaIndex = null;
+        this.fineIndex = null;
+        this.dsJumped = false;
+        this.dcJumped = false;
 
         // Note mapping utilities for roman numeral parsing
         this.indexToNote = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -59,9 +67,6 @@ class MusicalAccompanist {
         
         // Bind event handlers
         this.bindEvents();
-        
-        // Initialize UI elements
-        this.initializeUI();
         
         // Initialize with empty progression
         this.displayChords();
@@ -121,7 +126,16 @@ class MusicalAccompanist {
         try {
             console.log('ensureAudioInitialized called, current state:', Tone.context.state);
             
-            // Always call Tone.start() to ensure audio context is properly initialized
+            // First, handle the suspended AudioContext (this is the key fix)
+            if (Tone.context.state === 'suspended') {
+                console.log('AudioContext is suspended, attempting to resume...');
+                await Tone.context.resume();
+                console.log('Tone.context.resume() completed, new state:', Tone.context.state);
+            } else {
+                console.log('AudioContext state is not suspended, it is:', Tone.context.state);
+            }
+            
+            // Then ensure Tone.js transport is started
             if (Tone.context.state !== 'running') {
                 console.log('Context not running, calling Tone.start()...');
                 await Tone.start();
@@ -130,7 +144,7 @@ class MusicalAccompanist {
                 console.log('Context is already running');
             }
             
-            // Initialize our synths if not already done
+            // Finally, initialize our synths if not already done
             if (!this.audioInitialized) {
                 console.log('Audio not initialized, calling initializeAudio()...');
                 await this.initializeAudio();
@@ -187,25 +201,21 @@ class MusicalAccompanist {
         // Key signature controls
         const tonicSelect = document.getElementById('key-tonic');
         const modeSelect = document.getElementById('key-mode');
-        if (tonicSelect && modeSelect) {
-            tonicSelect.addEventListener('change', (e) => {
-                this.key.tonic = e.target.value;
-                this.updateRomanNumeralButtons();
-                this.displayChords();
-                this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
-            });
-            
-            modeSelect.addEventListener('change', (e) => {
-                this.key.mode = e.target.value;
-                this.updateRomanNumeralButtons();
-                this.displayChords();
-                this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
-            });
+        if (tonicSelect && modeSelect) {        tonicSelect.addEventListener('change', (e) => {
+            this.key.tonic = e.target.value;
+            this.updateRomanNumeralButtons();
+            this.displayChords();
+            this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
+        });modeSelect.addEventListener('change', (e) => {
+            this.key.mode = e.target.value;
+            this.updateRomanNumeralButtons();
+            this.displayChords();
+            this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
+        });
         }
 
         document.getElementById('loop').addEventListener('change', (e) => {
             this.loopMode = e.target.checked;
-            this.showStatus(`Loop mode ${this.loopMode ? 'enabled' : 'disabled'}`);
         });
 
         document.getElementById('metronome-toggle').addEventListener('change', (e) => {
@@ -373,26 +383,6 @@ class MusicalAccompanist {
                 await this.selectRomanChord(e.target.dataset.roman);
             });
         });
-    }
-
-    /**
-     * Initialize UI elements to match internal state
-     */
-    initializeUI() {
-        // Sync checkbox states with internal values
-        document.getElementById('loop').checked = this.loopMode;
-        document.getElementById('metronome-toggle').checked = this.metronomeEnabled;
-        
-        // Update tempo and volume displays
-        document.getElementById('tempo-display').textContent = this.tempo;
-        document.getElementById('volume-display').textContent = Math.round(this.volume * 100) + '%';
-        
-        // Set slider values
-        document.getElementById('tempo').value = this.tempo;
-        document.getElementById('volume').value = Math.round(this.volume * 100);
-        
-        // Initialize repeat markers drag and drop
-        // (Removed for simplicity)
     }
 
     /**
@@ -602,13 +592,124 @@ class MusicalAccompanist {
     }
 
     /**
+     * Get preset data without loading it
+     */
+    getPresetData(presetName) {
+        const presets = {
+            'drone-a': {
+                name: 'Drone: A (440Hz)',
+                chords: [{ name: 'A', notes: ['A4'], duration: '1n', isDrone: true, isSingleNote: true }],
+                tempo: 60,
+                key: 'A'
+            },
+            'single-note-c': {
+                name: 'Single Note: C',
+                chords: [{ name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true }],
+                tempo: 120,
+                key: 'C'
+            },
+            'chromatic-scale': {
+                name: 'Chromatic Scale',
+                chords: [
+                    { name: 'C', notes: ['C4'], duration: '1n', isSingleNote: true },
+                    { name: 'C#', notes: ['C#4'], duration: '1n', isSingleNote: true },
+                    { name: 'D', notes: ['D4'], duration: '1n', isSingleNote: true },
+                    { name: 'D#', notes: ['D#4'], duration: '1n', isSingleNote: true },
+                    { name: 'E', notes: ['E4'], duration: '1n', isSingleNote: true },
+                    { name: 'F', notes: ['F4'], duration: '1n', isSingleNote: true },
+                    { name: 'F#', notes: ['F#4'], duration: '1n', isSingleNote: true },
+                    { name: 'G', notes: ['G4'], duration: '1n', isSingleNote: true },
+                    { name: 'G#', notes: ['G#4'], duration: '1n', isSingleNote: true },
+                    { name: 'A', notes: ['A4'], duration: '1n', isSingleNote: true },
+                    { name: 'A#', notes: ['A#4'], duration: '1n', isSingleNote: true },
+                    { name: 'B', notes: ['B4'], duration: '1n', isSingleNote: true },
+                    { name: 'C5', notes: ['C5'], duration: '1n', isSingleNote: true }
+                ],
+                tempo: 80,
+                key: 'C'
+            },
+            'g-major-145': {
+                name: 'G Major I-IV-V',
+                chords: [
+                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' },
+                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'D', notes: ['D4', 'F#4', 'A4'], duration: '1n' },
+                    { name: 'G', notes: ['G4', 'B4', 'D5'], duration: '1n' }
+                ],
+                tempo: 100,
+                key: 'G'
+            },
+            'c-major-1645': {
+                name: 'C Major I-vi-IV-V',
+                chords: [
+                    { name: 'C', notes: ['C4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'Am', notes: ['A3', 'C4', 'E4'], duration: '1n' },
+                    { name: 'F', notes: ['F3', 'A3', 'C4'], duration: '1n' },
+                    { name: 'G', notes: ['G3', 'B3', 'D4'], duration: '1n' }
+                ],
+                tempo: 120,
+                key: 'C'
+            },
+            'd-major-drone': {
+                name: 'D Major Drone',
+                chords: [{ name: 'D', notes: ['D4', 'A4'], duration: '1n', isDrone: true }],
+                tempo: 60,
+                key: 'D'
+            },
+            'blues-12bar': {
+                name: '12-Bar Blues in A',
+                chords: [
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
+                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' },
+                    { name: 'D7', notes: ['D4', 'F#4', 'A4', 'C5'], duration: '1n' },
+                    { name: 'A7', notes: ['A3', 'C#4', 'E4', 'G4'], duration: '1n' },
+                    { name: 'E7', notes: ['E4', 'G#4', 'B4', 'D5'], duration: '1n' }
+                ],
+                tempo: 120,
+                key: 'A'
+            }
+        };
+
+        const preset = presets[presetName];
+        if (!preset) {
+            this.showStatus('Preset not found');
+            return;
+        }
+
+        this.chordProgression = preset.chords;
+        this.tempo = preset.tempo;
+        
+        // Update UI
+        document.getElementById('tempo').value = this.tempo;
+        document.getElementById('tempo-display').textContent = this.tempo;
+        
+        this.displayChords();
+        this.showStatus(`Loaded preset: ${preset.name}`);
+    }
+
+    /**
      * Parse a chord string into chord objects
      */
     parseChordString(input) {
         const chords = [];
 
-        // Tokenize keeping basic repeat symbols intact
-        const tokens = input.match(/\|:|:\|x?\d*|[^\s]+/gi) || [];
+        // Navigation marker indices
+        this.segnoIndex = null;
+        this.codaIndex = null;
+        this.toCodaIndices = [];
+        this.dsMarkers = [];
+        this.dcMarkers = [];
+        this.fineIndex = null;
+
+        // Tokenize keeping navigation symbols intact
+        const tokens = input.match(/\|:|:\|x?\d*|SEGNO|CODA|TOCODA|DS|DC|FINE|[^\s]+/gi) || [];
 
         const repeatStack = [];
 
@@ -679,6 +780,24 @@ class MusicalAccompanist {
             }
 
             switch (token.toUpperCase()) {
+                case 'SEGNO':
+                    this.segnoIndex = chords.length;
+                    continue;
+                case 'CODA':
+                    this.codaIndex = chords.length;
+                    continue;
+                case 'TOCODA':
+                    this.toCodaIndices.push(chords.length);
+                    continue;
+                case 'DS':
+                    this.dsMarkers.push(chords.length);
+                    continue;
+                case 'DC':
+                    this.dcMarkers.push(chords.length);
+                    continue;
+                case 'FINE':
+                    this.fineIndex = chords.length;
+                    continue;
                 case '|':
                     continue;
                 default:
@@ -938,7 +1057,6 @@ class MusicalAccompanist {
                 chordElement.className = 'chord-item';
                 
                 const globalChordIndex = this.getGlobalChordIndex(measureIndex, chordIndex);
-                chordElement.dataset.index = globalChordIndex;
                 
                 if (chord.isEmpty) {
                     // Empty slot for incomplete measures
@@ -1192,6 +1310,7 @@ class MusicalAccompanist {
             this.isPlaying = true;
             this.isPaused = false;
             this.currentChordIndex = 0;
+            this.resetNavigationState();
             
             // Update UI
             document.getElementById('play-btn').disabled = true;
@@ -1216,44 +1335,60 @@ class MusicalAccompanist {
      * Schedule the chord progression playback
      */
     schedulePlayback() {
-        // Clear any existing scheduled events
-        Tone.Transport.cancel();
-        
-        // Create a repeating event instead of individual schedules
-        const chordDuration = 60 / this.tempo; // Duration of each chord in seconds
-        const totalDuration = this.chordProgression.length * chordDuration;
-        
-        // Schedule the main progression loop
-        Tone.Transport.scheduleRepeat((time) => {
-            if (!this.isPlaying) return;
+        for (let i = 0; i < this.chordProgression.length; i++) {
+            const chord = this.chordProgression[i];
+            const startTime = i * (60 / this.tempo);
             
-            const chord = this.chordProgression[this.currentChordIndex];
-            if (!chord) return;
-            
-            this.updateProgressionDisplay();
-            
-            const frequencies = this.getChordFrequencies(chord);
-            this.playChord(frequencies, chord);
-            
-            // Schedule metronome if enabled
-            if (this.metronomeEnabled) {
-                this.playMetronome();
-            }
-            
-            // Move to next chord
-            this.currentChordIndex++;
-            
-            // Handle end of progression
-            if (this.currentChordIndex >= this.chordProgression.length) {
-                if (this.loopMode) {
-                    this.currentChordIndex = 0;
-                } else {
-                    this.stopPlayback();
+            Tone.Transport.schedule((time) => {
+                if (!this.isPlaying) return;
+                
+                this.currentChordIndex = i;
+                this.updateProgressionDisplay();
+                
+                const frequencies = this.getChordFrequencies(chord);
+                this.playChord(frequencies, chord);
+                
+                // Schedule metronome if enabled
+                if (this.metronomeEnabled) {
+                    this.playMetronome();
                 }
-            }
-        }, chordDuration, 0);
+                
+                // Check if we've reached the end
+                if (i === this.chordProgression.length - 1) {
+                    this.moveToNextChord();
+                }
+            }, startTime);
+        }
         
         Tone.Transport.start();
+    }
+
+    /**
+     * Move to the next chord in the progression
+     */
+    moveToNextChord() {
+        this.currentChordIndex++;
+        
+        if (this.currentChordIndex >= this.chordProgression.length) {
+            if (this.loopMode) {
+                this.currentChordIndex = 0;
+            } else {
+                this.stopPlayback();
+                return;
+            }
+        }
+        
+        this.updateProgressionDisplay();
+    }
+
+    /**
+     * Reset navigation state
+     */
+    resetNavigationState() {
+        this.dsJumped = false;
+        this.dcJumped = false;
+        this.codaIndex = null;
+        this.fineIndex = null;
     }
 
     /**
@@ -1312,7 +1447,7 @@ class MusicalAccompanist {
         const isAccented = (this.currentChordIndex % this.timeSignature === 0);
         const note = isAccented ? 'C5' : 'C6';
         
-        this.metronome.triggerAttackRelease(note, '16n');
+        this.metronomeSynth.triggerAttackRelease(note, '16n');
     }
 
     /**
@@ -1382,48 +1517,17 @@ class MusicalAccompanist {
      * Get chord from Roman numeral
      */
     getRomanNumeralChord(romanNumeral) {
-        const keyIndex = this.noteToIndex[this.key.tonic];
-        const majorScale = [0, 2, 4, 5, 7, 9, 11]; // Major scale intervals
-        const minorScale = [0, 2, 3, 5, 7, 8, 10]; // Natural minor scale intervals
-        
-        const scale = this.key.mode === 'major' ? majorScale : minorScale;
-        
-        // Map Roman numerals to scale degrees (0-indexed)
         const romanNumeralMap = {
-            'I': 0,
-            'ii': 1,
-            'iii': 2,
-            'IV': 3,
-            'V': 4,
-            'vi': 5,
-            'vii°': 6,
-            'i': 0,
-            'ii°': 1,
-            'III': 2,
-            'iv': 3,
-            'v': 4,
-            'VI': 5,
-            'VII': 6
+            'I': { name: 'I', notes: ['C4', 'E4', 'G4'] },
+            'ii': { name: 'ii', notes: ['D4', 'F4', 'A4'] },
+            'iii': { name: 'iii', notes: ['E4', 'G4', 'B4'] },
+            'IV': { name: 'IV', notes: ['F4', 'A4', 'C5'] },
+            'V': { name: 'V', notes: ['G4', 'B4', 'D5'] },
+            'vi': { name: 'vi', notes: ['A4', 'C5', 'E5'] },
+            'vii°': { name: 'vii°', notes: ['B4', 'D5', 'F5'] }
         };
         
-        if (!(romanNumeral in romanNumeralMap)) {
-            return null;
-        }
-        
-        const degree = romanNumeralMap[romanNumeral];
-        const rootIndex = (keyIndex + scale[degree]) % 12;
-        const thirdIndex = (keyIndex + scale[(degree + 2) % 7]) % 12;
-        const fifthIndex = (keyIndex + scale[(degree + 4) % 7]) % 12;
-        
-        const rootNote = this.indexToNote[rootIndex] + '4';
-        const thirdNote = this.indexToNote[thirdIndex] + '4';
-        const fifthNote = this.indexToNote[fifthIndex] + '4';
-        
-        return {
-            name: romanNumeral,
-            notes: [rootNote, thirdNote, fifthNote],
-            duration: '1n'
-        };
+        return romanNumeralMap[romanNumeral] || null;
     }
 
     /**
@@ -1431,774 +1535,29 @@ class MusicalAccompanist {
      */
     highlightPianoKeys(notes) {
         // Clear previous highlights
-        const keys = document.querySelectorAll('.key');
+        const keys = document.querySelectorAll('.piano-key');
         keys.forEach(key => {
             key.classList.remove('highlighted');
         });
         
         // Highlight new notes
         notes.forEach(note => {
-            const key = document.querySelector(`.key[data-note="${note}"]`);
+            const noteName = note.replace(/\d+/, ''); // Remove octave number
+            const key = document.querySelector(`.piano-key[data-note="${noteName}"]`);
             if (key) {
                 key.classList.add('highlighted');
             }
         });
-    }    /**
+    }
+
+    /**
      * Update chord info display
      */
     updateChordInfo(chord) {
-        const chordInfo = document.getElementById('roman-chord-display');
+        const chordInfo = document.getElementById('chord-info');
         if (chordInfo && chord) {
             chordInfo.textContent = `${chord.name}: ${chord.notes.join(', ')}`;
         }
-    }
-
-    /**
-     * Toggle a note on the piano keyboard
-     */
-    async toggleNote(note, keyElement) {
-        try {
-            await this.ensureAudioInitialized();
-            
-            if (this.selectedNotes.includes(note)) {
-                // Remove note
-                this.selectedNotes = this.selectedNotes.filter(n => n !== note);
-                keyElement.classList.remove('active');
-            } else {
-                // Add note
-                this.selectedNotes.push(note);
-                keyElement.classList.add('active');
-            }
-            
-            // Update display
-            this.updateSelectedNotesDisplay();
-            
-            // Play the note
-            this.playNote(note);
-            
-        } catch (error) {
-            console.error('Error toggling note:', error);
-            this.showStatus('Error toggling note');
-        }
-    }
-
-    /**
-     * Play a single note
-     */
-    playNote(note) {
-        try {
-            const frequency = Tone.Frequency(note).toFrequency();
-            this.synth.triggerAttackRelease(frequency, '4n');
-        } catch (error) {
-            console.error('Error playing note:', error);
-        }
-    }
-
-    /**
-     * Play selected notes as a chord
-     */
-    async playSelectedNotes() {
-        try {
-            await this.ensureAudioInitialized();
-            
-            if (this.selectedNotes.length === 0) {
-                this.showStatus('No notes selected');
-                return;
-            }
-            
-            // Get frequencies for selected notes
-            const frequencies = this.selectedNotes.map(note => 
-                Tone.Frequency(note).toFrequency()
-            );
-            
-            // Play chord
-            this.synth.releaseAll();
-            frequencies.forEach(freq => {
-                this.synth.triggerAttackRelease(freq, '2n');
-            });
-            
-            this.showStatus(`Playing: ${this.selectedNotes.join(', ')}`);
-            
-        } catch (error) {
-            console.error('Error playing selected notes:', error);
-            this.showStatus('Error playing selected notes');
-        }
-    }
-
-    /**
-     * Clear selected notes
-     */
-    clearSelection() {
-        this.selectedNotes = [];
-        
-        // Remove active class from all keys
-        document.querySelectorAll('.key').forEach(key => {
-            key.classList.remove('active');
-        });
-        
-        // Update display
-        this.updateSelectedNotesDisplay();
-        
-        this.showStatus('Selection cleared');
-    }
-
-    /**
-     * Update the selected notes display
-     */
-    updateSelectedNotesDisplay() {
-        const display = document.getElementById('selected-notes');
-        if (!display) return;
-        
-        display.innerHTML = '';
-        
-        if (this.selectedNotes.length === 0) {
-            display.innerHTML = '<span class="placeholder">No notes selected</span>';
-            return;
-        }
-        
-        this.selectedNotes.forEach(note => {
-            const noteElement = document.createElement('span');
-            noteElement.className = 'selected-note';
-            noteElement.textContent = note;
-            display.appendChild(noteElement);
-        });
-    }
-
-    /**
-     * Add selected notes to progression
-     */
-    addSelectionToProgression() {
-        if (this.selectedNotes.length === 0) {
-            this.showStatus('No notes selected to add');
-            return;
-        }
-        
-        // Create chord object
-        const chord = {
-            name: this.selectedNotes.join(''),
-            notes: [...this.selectedNotes],
-            duration: '1n',
-            isDrone: false
-        };
-        
-        // Add to progression
-        if (this.targetChordIndex !== null) {
-            this.chordProgression[this.targetChordIndex] = chord;
-            this.targetChordIndex = null;
-        } else {
-            this.chordProgression.push(chord);
-        }
-        
-        // Update display
-        this.displayChords();
-        this.updateSelectedSlotDisplay();
-        
-        this.showStatus(`Added chord: ${chord.name}`);
-    }
-
-    /**
-     * Clear slot selection
-     */
-    clearSlotSelection() {
-        this.targetChordIndex = null;
-        this.updateSelectedSlotDisplay();
-        this.showStatus('Slot selection cleared');
-    }
-
-    /**
-     * Update selected slot display
-     */
-    updateSelectedSlotDisplay() {
-        const display = document.getElementById('selected-slot');
-        if (!display) return;
-        
-        if (this.targetChordIndex !== null) {
-            display.textContent = `Selected slot: ${this.targetChordIndex + 1}`;
-        } else {
-            display.textContent = 'No slot selected';
-        }
-    }
-
-    /**
-     * Show status message to the user
-     */
-    showStatus(message) {
-        const statusDisplay = document.getElementById('status-display');
-        if (statusDisplay) {
-            statusDisplay.textContent = message;
-        }
-        console.log('Status:', message);
-    }
-
-    /**
-     * Convert volume (0-1) to decibels for Tone.js
-     */
-    volumeToDb(volume) {
-        if (volume <= 0) return -Infinity;
-        return 20 * Math.log10(volume);
-    }
-
-    /**
-     * Update Roman numeral buttons based on current key
-     */
-    updateRomanNumeralButtons() {
-        const buttons = document.querySelectorAll('.roman-chord-btn');
-        
-        if (this.key.mode === 'major') {
-            // Major key Roman numerals
-            const majorNumerals = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
-            buttons.forEach((button, index) => {
-                if (index < majorNumerals.length) {
-                    button.textContent = majorNumerals[index];
-                    button.dataset.roman = majorNumerals[index];
-                }
-            });
-        } else {
-            // Minor key Roman numerals
-            const minorNumerals = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'];
-            buttons.forEach((button, index) => {
-                if (index < minorNumerals.length) {
-                    button.textContent = minorNumerals[index];
-                    button.dataset.roman = minorNumerals[index];
-                }
-            });
-        }
-        
-        // Clear any previous selection
-        buttons.forEach(btn => btn.classList.remove('selected'));
-        
-        console.log(`Roman numeral buttons updated for key: ${this.key.tonic} ${this.key.mode}`);
-    }
-
-    /**
-     * Select a Roman numeral chord
-     */
-    async selectRomanChord(romanNumeral) {
-        try {
-            const chord = this.getRomanNumeralChord(romanNumeral);
-            if (chord) {
-                this.highlightPianoKeys(chord.notes);
-                this.updateChordInfo(chord);
-                await this.previewChord(chord);
-                
-                // Update the selected Roman numeral button
-                this.updateSelectedRomanNumeral(romanNumeral);
-                
-                this.showStatus(`Selected ${romanNumeral} chord`);
-            } else {
-                this.showStatus(`Unknown Roman numeral: ${romanNumeral}`);
-            }
-        } catch (error) {
-            console.error('Error selecting Roman chord:', error);
-            this.showStatus('Error selecting Roman numeral chord');
-        }
-    }
-
-    /**
-     * Update the selected Roman numeral button visual state
-     */
-    updateSelectedRomanNumeral(romanNumeral) {
-        // Clear previous selection
-        document.querySelectorAll('.roman-chord-btn').forEach(btn => {
-            btn.classList.remove('selected');
-        });
-        
-        // Highlight the selected button
-        const selectedBtn = document.querySelector(`.roman-chord-btn[data-roman="${romanNumeral}"]`);
-        if (selectedBtn) {
-            selectedBtn.classList.add('selected');
-        }
-    }
-
-    /**
-     * Hide context menu
-     */
-    hideContextMenu() {
-        const contextMenu = document.getElementById('context-menu');
-        if (contextMenu) {
-            contextMenu.style.display = 'none';
-        }
-    }
-
-    /**
-     * Update progression info display
-     */
-    updateProgressionInfo() {
-        const info = document.getElementById('progression-info');
-        if (info) {
-            const chordCount = this.chordProgression.length;
-            const duration = Math.ceil(chordCount * (60 / this.tempo));
-            info.textContent = `${chordCount} chords, ~${duration}s duration`;
-        }
-    }
-
-    /**
-     * Show context menu for chord items
-     */
-    showContextMenu(e, chordIndex) {
-        e.preventDefault();
-        this.contextChordIndex = chordIndex;
-        
-        const contextMenu = document.getElementById('context-menu');
-        if (contextMenu) {
-            contextMenu.style.display = 'block';
-            contextMenu.style.left = e.pageX + 'px';
-            contextMenu.style.top = e.pageY + 'px';
-        }
-    }
-
-    /**
-     * Show empty slot menu
-     */
-    showEmptySlotMenu(e, slotIndex) {
-        e.preventDefault();
-        this.contextChordIndex = slotIndex;
-        this.showContextMenu(e, slotIndex);
-    }
-
-    /**
-     * Select slot for piano input
-     */
-    selectSlotForPiano(slotIndex) {
-        this.targetChordIndex = slotIndex;
-        this.updateSelectedSlotDisplay();
-        this.showStatus(`Selected slot ${slotIndex + 1} for piano input`);
-    }
-
-    /**
-     * Edit chord at index
-     */
-    editChord(chordIndex) {
-        this.editingChordIndex = chordIndex;
-        // Open edit modal (if it exists)
-        const modal = document.getElementById('chord-edit-modal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
-    }
-
-    /**
-     * Close edit modal
-     */
-    closeEditModal() {
-        const modal = document.getElementById('chord-edit-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-        this.editingChordIndex = null;
-    }
-
-    /**
-     * Save chord edit
-     */
-    saveChordEdit() {
-        // Implementation depends on modal structure
-        this.closeEditModal();
-        this.displayChords();
-    }
-
-    /**
-     * Delete chord
-     */
-    deleteChord() {
-        if (this.editingChordIndex !== null) {
-            this.deleteChordAtIndex(this.editingChordIndex);
-            this.closeEditModal();
-        }
-    }
-
-    /**
-     * Delete chord at specific index
-     */
-    deleteChordAtIndex(index) {
-        if (index >= 0 && index < this.chordProgression.length) {
-            this.chordProgression.splice(index, 1);
-            this.displayChords();
-            this.showStatus(`Deleted chord at position ${index + 1}`);
-        }
-    }
-
-    /**
-     * Duplicate chord
-     */
-    duplicateChord(chordIndex) {
-        if (chordIndex >= 0 && chordIndex < this.chordProgression.length) {
-            const chord = { ...this.chordProgression[chordIndex] };
-            this.chordProgression.splice(chordIndex + 1, 0, chord);
-            this.displayChords();
-            this.showStatus(`Duplicated chord at position ${chordIndex + 1}`);
-        }
-    }
-
-    /**
-     * Show chord substitutions
-     */
-    showChordSubstitutions(chordIndex) {
-        // Placeholder for chord substitution functionality
-        this.showStatus('Chord substitutions not implemented yet');
-    }
-
-    /**
-     * Insert empty chord
-     */
-    insertEmptyChord(index) {
-        const emptyChord = {
-            name: '',
-            notes: [],
-            duration: '1n',
-            isEmpty: true
-        };
-        this.chordProgression.splice(index, 0, emptyChord);
-        this.displayChords();
-        this.showStatus(`Inserted empty chord at position ${index + 1}`);
-    }
-
-    /**
-     * Delete measure
-     */
-    deleteMeasure(measureIndex) {
-        const chordsPerMeasure = this.timeSignature;
-        const startIndex = measureIndex * chordsPerMeasure;
-        const endIndex = startIndex + chordsPerMeasure;
-        
-        this.chordProgression.splice(startIndex, chordsPerMeasure);
-        this.displayChords();
-        this.showStatus(`Deleted measure ${measureIndex + 1}`);
-    }
-
-    /**
-     * Clear progression
-     */
-    clearProgression() {
-        this.chordProgression = [];
-        this.displayChords();
-        this.showStatus('Progression cleared');
-    }
-
-    /**
-     * Create empty measures
-     */
-    createEmptyMeasures() {
-        const numMeasures = parseInt(prompt('How many measures to create?', '4'));
-        if (numMeasures && numMeasures > 0) {
-            for (let i = 0; i < numMeasures * this.timeSignature; i++) {
-                this.chordProgression.push({
-                    name: '',
-                    notes: [],
-                    duration: '1n',
-                    isEmpty: true
-                });
-            }
-            this.displayChords();
-            this.showStatus(`Created ${numMeasures} empty measures`);
-        }
-    }
-
-    /**
-     * Transpose progression
-     */
-    transposeProgression(semitones) {
-        // Placeholder for transposition functionality
-        this.showStatus(`Transposing by ${semitones} semitones not implemented yet`);
-    }
-
-    /**
-     * Export progression
-     */
-    exportProgression() {
-        const data = JSON.stringify(this.chordProgression, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'chord-progression.json';
-        a.click();
-        URL.revokeObjectURL(url);
-        this.showStatus('Progression exported');
-    }
-
-    /**
-     * Import progression
-     */
-    importProgression(file) {
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                this.chordProgression = JSON.parse(e.target.result);
-                this.displayChords();
-                this.showStatus('Progression imported');
-            } catch (error) {
-                this.showStatus('Error importing progression');
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    /**
-     * Select previous empty slot
-     */
-    selectPreviousEmptySlot() {
-        for (let i = this.chordProgression.length - 1; i >= 0; i--) {
-            if (this.chordProgression[i].isEmpty) {
-                this.selectSlotForPiano(i);
-                return;
-            }
-        }
-        this.showStatus('No empty slots found');
-    }
-
-    /**
-     * Select next empty slot
-     */
-    selectNextEmptySlot() {
-        for (let i = 0; i < this.chordProgression.length; i++) {
-            if (this.chordProgression[i].isEmpty) {
-                this.selectSlotForPiano(i);
-                return;
-            }
-        }
-        this.showStatus('No empty slots found');
-    }
-
-    /**
-     * Go to specific slot
-     */
-    gotoSpecificSlot() {
-        const measure = parseInt(document.getElementById('goto-measure')?.value || '1');
-        const beat = parseInt(document.getElementById('goto-beat')?.value || '1');
-        const slotIndex = ((measure - 1) * this.timeSignature) + (beat - 1);
-        
-        if (slotIndex >= 0 && slotIndex < this.chordProgression.length) {
-            this.selectSlotForPiano(slotIndex);
-        } else {
-            this.showStatus('Invalid measure/beat');
-        }
-    }
-
-    /**
-     * Handle drag start
-     */
-    handleDragStart(e, chord, index) {
-        this.draggedFromIndex = index;
-        e.dataTransfer.setData('text/plain', JSON.stringify(chord));
-    }
-
-    /**
-     * Handle drag over
-     */
-    handleDragOver(e) {
-        e.preventDefault();
-    }
-
-    /**
-     * Handle drag enter
-     */
-    handleDragEnter(e) {
-        e.preventDefault();
-        e.target.classList.add('drag-over');
-    }
-
-    /**
-     * Handle drag leave
-     */
-    handleDragLeave(e) {
-        e.target.classList.remove('drag-over');
-    }
-
-    /**
-     * Handle drop
-     */
-    handleDrop(e, measureIndex, chordIndex) {
-        e.preventDefault();
-        e.target.classList.remove('drag-over');
-        
-        const globalIndex = this.getGlobalChordIndex(measureIndex, chordIndex);
-        
-        if (this.draggedFromIndex !== null && this.draggedFromIndex !== globalIndex) {
-            // Move chord from one position to another
-            const draggedChord = this.chordProgression[this.draggedFromIndex];
-            this.chordProgression.splice(this.draggedFromIndex, 1);
-            this.chordProgression.splice(globalIndex, 0, draggedChord);
-            this.displayChords();
-            this.showStatus('Chord moved');
-        }
-        
-        this.draggedFromIndex = null;
-    }
-
-    /**
-     * Initialize repeat markers drag and drop functionality
-     */
-    initializeRepeatMarkers() {
-        const repeatMarkers = document.querySelectorAll('.repeat-marker');
-        
-        // Add drag event listeners to repeat markers
-        repeatMarkers.forEach(marker => {
-            marker.addEventListener('dragstart', (e) => {
-                this.handleRepeatDragStart(e);
-            });
-            
-            marker.addEventListener('dragend', (e) => {
-                this.handleRepeatDragEnd(e);
-            });
-        });
-        
-        // Add drop event listeners to chord slots
-        this.setupChordSlotDropZones();
-    }
-    
-    /**
-     * Set up drop zones for chord slots
-     */
-    setupChordSlotDropZones() {
-        const chordContainer = document.getElementById('chord-progression');
-        if (!chordContainer) return;
-        
-        // Use event delegation for dynamically created chord items
-        chordContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            const chordItem = e.target.closest('.chord-item');
-            if (chordItem) {
-                chordItem.classList.add('drop-zone');
-            }
-        });
-        
-        chordContainer.addEventListener('dragleave', (e) => {
-            const chordItem = e.target.closest('.chord-item');
-            if (chordItem && !chordItem.contains(e.relatedTarget)) {
-                chordItem.classList.remove('drop-zone');
-            }
-        });
-        
-        chordContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const chordItem = e.target.closest('.chord-item');
-            if (chordItem) {
-                this.handleRepeatDrop(e, chordItem);
-                chordItem.classList.remove('drop-zone');
-            }
-        });
-    }
-    
-    /**
-     * Handle repeat marker drag start
-     */
-    handleRepeatDragStart(e) {
-        const marker = e.target.closest('.repeat-marker');
-        if (!marker) return;
-        
-        marker.classList.add('dragging');
-        
-        const repeatData = {
-            type: marker.dataset.repeatType,
-            symbol: marker.querySelector('.repeat-symbol').textContent,
-            label: marker.querySelector('.repeat-label').textContent
-        };
-        
-        e.dataTransfer.setData('application/json', JSON.stringify(repeatData));
-        e.dataTransfer.effectAllowed = 'copy';
-    }
-    
-    /**
-     * Handle repeat marker drag end
-     */
-    handleRepeatDragEnd(e) {
-        const marker = e.target.closest('.repeat-marker');
-        if (marker) {
-            marker.classList.remove('dragging');
-        }
-        
-        // Remove all drop-zone classes
-        document.querySelectorAll('.chord-item.drop-zone').forEach(item => {
-            item.classList.remove('drop-zone');
-        });
-    }
-    
-    /**
-     * Handle repeat marker drop on chord slot
-     */
-    handleRepeatDrop(e, chordItem) {
-        try {
-            const repeatData = JSON.parse(e.dataTransfer.getData('application/json'));
-            const slotIndex = parseInt(chordItem.dataset.index);
-            
-            if (isNaN(slotIndex) || slotIndex < 0) {
-                this.showStatus('Invalid drop target');
-                return;
-            }
-            
-            // Create repeat marker object
-            const repeatMarker = {
-                name: repeatData.symbol,
-                notes: [],
-                duration: '0n',
-                isRepeatMarker: true,
-                repeatType: repeatData.type,
-                repeatLabel: repeatData.label
-            };
-            
-            // Add or replace chord with repeat marker
-            if (slotIndex >= this.chordProgression.length) {
-                // Extend progression if needed
-                while (this.chordProgression.length <= slotIndex) {
-                    this.chordProgression.push(null);
-                }
-            }
-            
-            this.chordProgression[slotIndex] = repeatMarker;
-            this.updateRepeatMarkers();
-            this.displayChords();
-            this.showStatus(`${repeatData.label} added at position ${slotIndex + 1}`);
-            
-        } catch (error) {
-            console.error('Error handling repeat drop:', error);
-            this.showStatus('Error adding repeat marker');
-        }
-    }
-    
-    /**
-     * Parse single note
-     */
-    parseSingleNote(noteName) {
-        // Add octave if not present
-        if (!/\d$/.test(noteName)) {
-            noteName += '4';
-        }
-        
-        return {
-            name: noteName,
-            notes: [noteName],
-            duration: '1n',
-            isSingleNote: true
-        };
-    }
-
-    /**
-     * Check if string is a single note
-     */
-    isSingleNote(str) {
-        return /^[A-G][#b]?\d?$/.test(str);
-    }
-
-    /**
-     * Parse custom chord (note-dash-note format)
-     */
-    parseCustomChord(chordName) {
-        const notes = chordName.split('-').map(note => {
-            if (!/\d$/.test(note)) {
-                note += '4';
-            }
-            return note;
-        });
-        
-        return {
-            name: chordName,
-            notes: notes,
-            duration: '1n',
-            isCustom: true
-        };
     }
 }
 

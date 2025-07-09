@@ -522,10 +522,12 @@ section h2 {
     position: relative;
     height: 120px;
     max-width: 720px;
+    min-width: 720px;
     margin: 20px auto;
     background: #333;
     border-radius: 5px;
     padding: 10px;
+    overflow-x: auto;
 }
 
 .piano-keys {
@@ -837,8 +839,15 @@ footer {
     }
     
     .piano-keyboard {
-        max-width: 100%;
+        min-width: 720px;
+        max-width: none;
         height: 100px;
+        margin: 20px 0;
+    }
+    
+    .piano-section {
+        overflow-x: auto;
+        padding: 15px 10px;
     }
     
     .key.white {
@@ -853,6 +862,13 @@ footer {
     .key.white:nth-child(5) { left: 160px; }
     .key.white:nth-child(6) { left: 200px; }
     .key.white:nth-child(7) { left: 240px; }
+    .key.white:nth-child(8) { left: 280px; }
+    .key.white:nth-child(9) { left: 320px; }
+    .key.white:nth-child(10) { left: 360px; }
+    .key.white:nth-child(11) { left: 400px; }
+    .key.white:nth-child(12) { left: 440px; }
+    .key.white:nth-child(13) { left: 480px; }
+    .key.white:nth-child(14) { left: 520px; }
     
     .key.black {
         width: 25px;
@@ -864,11 +880,11 @@ footer {
     .key.black[data-note="F#4"] { left: 148px; }
     .key.black[data-note="G#4"] { left: 188px; }
     .key.black[data-note="A#4"] { left: 228px; }
-    .key.black[data-note="C#5"] { left: 378px; }
-    .key.black[data-note="D#5"] { left: 418px; }
-    .key.black[data-note="F#5"] { left: 498px; }
-    .key.black[data-note="G#5"] { left: 538px; }
-    .key.black[data-note="A#5"] { left: 578px; }
+    .key.black[data-note="C#5"] { left: 268px; }
+    .key.black[data-note="D#5"] { left: 308px; }
+    .key.black[data-note="F#5"] { left: 388px; }
+    .key.black[data-note="G#5"] { left: 428px; }
+    .key.black[data-note="A#5"] { left: 468px; }
     
     .chord-builder button {
         display: block;
@@ -878,15 +894,162 @@ footer {
 }
 
 @media (max-width: 480px) {
-    main {
-        padding: 20px;
+    .roman-numeral-buttons {
+        gap: 5px;
     }
     
-    section {
+    .roman-chord-btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        min-width: 40px;
+    }
+    
+    .roman-chord-info {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+    }
+    
+    main {
         padding: 15px;
     }
     
+    header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .controls-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .control-group {
+        min-width: 100%;
+    }
+    
+    .chord-display {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .chord-display-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .chord-display-header h2 {
+        align-self: flex-start;
+        font-size: 1.5rem;
+    }
+    
+    .progression-controls {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .progression-info {
+        align-items: flex-start;
+        text-align: left;
+    }
+    
+    .measure-setup {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .measure-setup input[type="number"] {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .action-btn {
+        width: 100%;
+        padding: 10px;
+        font-size: 1rem;
+    }
+    
+    .clear-progression-btn {
+        width: 100%;
+        padding: 10px;
+        font-size: 1rem;
+    }
+    
+    .chord-item {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+    }
+    
+    .measure {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px;
+    }
+    
+    .measure-number {
+        top: -8px;
+        left: 8px;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    
+    .measure-time-signature {
+        top: -8px;
+        right: 8px;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    
     .playback-controls button {
+        padding: 10px 20px;
+        margin: 5px 0;
+        font-size: 1rem;
+    }
+    
+    #current-chord-display {
+        font-size: 1.8rem;
+    }
+    
+    .piano-keyboard {
+        height: 80px;
+    }
+    
+    .key.white {
+        width: 35px;
+        height: 70px;
+    }
+    
+    .key.white:nth-child(1) { left: 0; }
+    .key.white:nth-child(2) { left: 35px; }
+    .key.white:nth-child(3) { left: 70px; }
+    .key.white:nth-child(4) { left: 105px; }
+    .key.white:nth-child(5) { left: 140px; }
+    .key.white:nth-child(6) { left: 175px; }
+    .key.white:nth-child(7) { left: 210px; }
+    .key.white:nth-child(8) { left: 245px; }
+    .key.white:nth-child(9) { left: 280px; }
+    .key.white:nth-child(10) { left: 315px; }
+    .key.white:nth-child(11) { left: 350px; }
+    .key.white:nth-child(12) { left: 385px; }
+    .key.white:nth-child(13) { left: 420px; }
+    .key.white:nth-child(14) { left: 455px; }
+    
+    .key.black {
+        width: 20px;
+        height: 40px;
+    }
+    
+    .key.black[data-note="C#4"] { left: 28px; }
+    .key.black[data-note="D#4"] { left: 68px; }
+    .key.black[data-note="F#4"] { left: 148px; }
+    .key.black[data-note="G#4"] { left: 188px; }
+    .key.black[data-note="A#4"] { left: 228px; }
+    .key.black[data-note="C#5"] { left: 268px; }
+    .key.black[data-note="D#5"] { left: 308px; }
+    .key.black[data-note="F#5"] { left: 388px; }
+    .key.black[data-note="G#5"] { left: 428px; }
+    .key.black[data-note="A#5"] { left: 468px; }
+    
+    .chord-builder button {
         display: block;
         width: 100%;
         margin: 5px 0;
@@ -1268,6 +1431,97 @@ footer {
     0% { box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); }
     50% { box-shadow: 0 0 20px rgba(40, 167, 69, 0.8); }
     100% { box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); }
+}
+
+/* Roman Numeral Section */
+.roman-numeral-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.roman-numeral-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.roman-numeral-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.roman-chord-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-width: 50px;
+}
+
+.roman-chord-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.roman-chord-btn.active {
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    border-color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.roman-chord-btn.selected {
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    border-color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.roman-chord-btn.selected:hover {
+    background: rgba(255, 255, 255, 1);
+    color: #667eea;
+}
+
+.roman-chord-info {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px 20px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+#roman-chord-display {
+    font-family: 'Courier New', monospace;
+}
+
+/* Piano Keyboard */
+.key.highlighted {
+    background: #28a745 !important;
+    color: white !important;
+    transform: scale(0.95);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+.key.white.highlighted {
+    background: #28a745 !important;
+    border-color: #20c997;
+}
+
+.key.black.highlighted {
+    background: #28a745 !important;
+    border-color: #20c997;
 }
 
 

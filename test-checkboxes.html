@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkbox Test</title>
+</head>
+<body>
+    <h1>Checkbox Test</h1>
+    <div>
+        <p>Click the checkboxes below to test their functionality:</p>
+        <label><input type="checkbox" id="loop" checked> Loop Mode</label><br>
+        <label><input type="checkbox" id="metronome-toggle" checked> Metronome Click</label><br>
+        <div id="status"></div>
+    </div>
+    
+    <script>
+        // Test checkbox functionality
+        document.getElementById('loop').addEventListener('change', (e) => {
+            document.getElementById('status').innerHTML = `Loop mode ${e.target.checked ? 'enabled' : 'disabled'}`;
+        });
+        
+        document.getElementById('metronome-toggle').addEventListener('change', (e) => {
+            document.getElementById('status').innerHTML = `Metronome ${e.target.checked ? 'On' : 'Off'}`;
+        });
+    </script>
+</body>
+</html>
