@@ -35,8 +35,8 @@ class MusicalAccompanist {
             'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11
         };
         
-        // Initialize audio context
-        this.initializeAudio();
+        // Flag to track if audio has been initialized
+        this.audioInitialized = false;
         
         // Bind event handlers
         this.bindEvents();
@@ -78,6 +78,19 @@ class MusicalAccompanist {
         } catch (error) {
             console.error('Error initializing audio:', error);
             this.showStatus('Error initializing audio. Please check your browser settings.');
+        }
+    }
+
+    /**
+     * Ensure audio context and synths are ready after a user gesture
+     */
+    async ensureAudioInitialized() {
+        if (!this.audioInitialized) {
+            await this.initializeAudio();
+            this.audioInitialized = true;
+        }
+        if (Tone.context.state !== 'running') {
+            await Tone.start();
         }
     }
 
@@ -149,15 +162,15 @@ class MusicalAccompanist {
 
         // Piano keyboard events
         document.querySelectorAll('.key').forEach(key => {
-            key.addEventListener('click', (e) => {
+            key.addEventListener('click', async (e) => {
                 const note = e.target.dataset.note;
-                this.toggleNote(note, e.target);
+                await this.toggleNote(note, e.target);
             });
         });
 
         // Piano control buttons
-        document.getElementById('play-selected').addEventListener('click', () => {
-            this.playSelectedNotes();
+        document.getElementById('play-selected').addEventListener('click', async () => {
+            await this.playSelectedNotes();
         });
 
         document.getElementById('clear-selection').addEventListener('click', () => {
@@ -1157,8 +1170,8 @@ class MusicalAccompanist {
                     });
                     chordElement.appendChild(chordDeleteBtn);
                     
-                    chordElement.addEventListener('click', () => {
-                        this.previewChord(chord);
+                    chordElement.addEventListener('click', async () => {
+                        await this.previewChord(chord);
                     });
                     
                     // Add right-click context menu
@@ -1265,7 +1278,8 @@ class MusicalAccompanist {
     /**
      * Preview a single chord by playing it briefly
      */
-    previewChord(chord) {
+    async previewChord(chord) {
+        await this.ensureAudioInitialized();
         if (!this.synth) {
             return;
         }
@@ -1292,10 +1306,8 @@ class MusicalAccompanist {
         }
 
         try {
-            // Start Tone.js context if needed
-            if (Tone.context.state !== 'running') {
-                await Tone.start();
-            }
+            // Ensure audio context is ready
+            await this.ensureAudioInitialized();
 
             this.isPlaying = true;
             this.isPaused = false;
@@ -1582,7 +1594,8 @@ class MusicalAccompanist {
     /**
      * Toggle a note selection on the piano keyboard
      */
-    toggleNote(note, keyElement) {
+    async toggleNote(note, keyElement) {
+        await this.ensureAudioInitialized();
         const index = this.selectedNotes.indexOf(note);
         
         if (index > -1) {
@@ -1627,7 +1640,8 @@ class MusicalAccompanist {
     /**
      * Play the currently selected notes
      */
-    playSelectedNotes() {
+    async playSelectedNotes() {
+        await this.ensureAudioInitialized();
         if (!this.synth || this.selectedNotes.length === 0) {
             this.showStatus('No notes selected');
             return;
