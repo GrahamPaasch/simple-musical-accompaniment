@@ -1609,13 +1609,23 @@ class MusicalAccompanist {
      * Update selected slot display
      */
     updateSelectedSlotDisplay() {
-        const display = document.getElementById('selected-slot');
+        const display = document.getElementById('slot-info-text');
         if (!display) return;
         
         if (this.targetChordIndex !== null) {
             display.textContent = `Selected slot: ${this.targetChordIndex + 1}`;
+            // Show the slot selection display
+            const slotDisplay = document.getElementById('selected-slot-display');
+            if (slotDisplay) {
+                slotDisplay.style.display = 'block';
+            }
         } else {
             display.textContent = 'No slot selected';
+            // Hide the slot selection display
+            const slotDisplay = document.getElementById('selected-slot-display');
+            if (slotDisplay) {
+                slotDisplay.style.display = 'none';
+            }
         }
     }
 
@@ -1937,96 +1947,91 @@ class MusicalAccompanist {
     }
 
     /**
-     * Select previous empty slot
+     * Select the previous empty slot
      */
     selectPreviousEmptySlot() {
-        for (let i = this.chordProgression.length - 1; i >= 0; i--) {
-            if (this.chordProgression[i].isEmpty) {
-                this.selectSlotForPiano(i);
-                return;
+        if (this.targetChordIndex === null) {
+            // Find the last empty slot
+            for (let i = this.chordProgression.length - 1; i >= 0; i--) {
+                if (this.chordProgression[i].isEmpty) {
+                    this.selectSlotForPiano(i);
+                    return;
+                }
+            }
+        } else {
+            // Find the previous empty slot from current position
+            for (let i = this.targetChordIndex - 1; i >= 0; i--) {
+                if (this.chordProgression[i].isEmpty) {
+                    this.selectSlotForPiano(i);
+                    return;
+                }
             }
         }
-        this.showStatus('No empty slots found');
+        this.showStatus('No previous empty slot found');
     }
 
     /**
-     * Select next empty slot
+     * Select the next empty slot
      */
     selectNextEmptySlot() {
-        for (let i = 0; i < this.chordProgression.length; i++) {
+        const startIndex = this.targetChordIndex === null ? 0 : this.targetChordIndex + 1;
+        
+        for (let i = startIndex; i < this.chordProgression.length; i++) {
             if (this.chordProgression[i].isEmpty) {
                 this.selectSlotForPiano(i);
                 return;
             }
         }
-        this.showStatus('No empty slots found');
+        
+        // If no empty slot found, create a new one
+        this.chordProgression.push({
+            name: '',
+            notes: [],
+            duration: '1n',
+            isEmpty: true
+        });
+        this.selectSlotForPiano(this.chordProgression.length - 1);
+        this.displayChords();
     }
 
     /**
-     * Go to specific slot
+     * Go to a specific slot by measure and beat
      */
     gotoSpecificSlot() {
-        const measure = parseInt(document.getElementById('goto-measure')?.value || '1');
-        const beat = parseInt(document.getElementById('goto-beat')?.value || '1');
-        const slotIndex = ((measure - 1) * this.timeSignature) + (beat - 1);
+        const measureInput = document.getElementById('goto-measure');
+        const beatInput = document.getElementById('goto-beat');
         
-        if (slotIndex >= 0 && slotIndex < this.chordProgression.length) {
-            this.selectSlotForPiano(slotIndex);
-        } else {
-            this.showStatus('Invalid measure/beat');
-        }
-    }
-
-    /**
-     * Handle drag start
-     */
-    handleDragStart(e, chord, index) {
-        this.draggedFromIndex = index;
-        e.dataTransfer.setData('text/plain', JSON.stringify(chord));
-    }
-
-    /**
-     * Handle drag over
-     */
-    handleDragOver(e) {
-        e.preventDefault();
-    }
-
-    /**
-     * Handle drag enter
-     */
-    handleDragEnter(e) {
-        e.preventDefault();
-        e.target.classList.add('drag-over');
-    }
-
-    /**
-     * Handle drag leave
-     */
-    handleDragLeave(e) {
-        e.target.classList.remove('drag-over');
-    }
-
-    /**
-     * Handle drop
-     */
-    handleDrop(e, measureIndex, chordIndex) {
-        e.preventDefault();
-        e.target.classList.remove('drag-over');
+        if (!measureInput || !beatInput) return;
         
-        const globalIndex = this.getGlobalChordIndex(measureIndex, chordIndex);
+        const measure = parseInt(measureInput.value) - 1; // Convert to 0-based
+        const beat = parseInt(beatInput.value) - 1; // Convert to 0-based
         
-        if (this.draggedFromIndex !== null && this.draggedFromIndex !== globalIndex) {
-            // Move chord from one position to another
-            const draggedChord = this.chordProgression[this.draggedFromIndex];
-            this.chordProgression.splice(this.draggedFromIndex, 1);
-            this.chordProgression.splice(globalIndex, 0, draggedChord);
-            this.displayChords();
-            this.showStatus('Chord moved');
+        if (isNaN(measure) || isNaN(beat) || measure < 0 || beat < 0) {
+            this.showStatus('Please enter valid measure and beat numbers');
+            return;
         }
         
-        this.draggedFromIndex = null;
+        const slotIndex = measure * this.timeSignature + beat;
+        
+        // Extend progression if necessary
+        while (this.chordProgression.length <= slotIndex) {
+            this.chordProgression.push({
+                name: '',
+                notes: [],
+                duration: '1n',
+                isEmpty: true
+            });
+        }
+        
+        this.selectSlotForPiano(slotIndex);
+        this.displayChords();
+        
+        // Clear the inputs
+        measureInput.value = '';
+        beatInput.value = '';
     }
+
+    // ...existing code...
 
     /**
      * Initialize repeat markers drag and drop functionality
@@ -2143,7 +2148,12 @@ class MusicalAccompanist {
             if (slotIndex >= this.chordProgression.length) {
                 // Extend progression if needed
                 while (this.chordProgression.length <= slotIndex) {
-                    this.chordProgression.push(null);
+                    this.chordProgression.push({
+                        name: '',
+                        notes: [],
+                        duration: '1n',
+                        isEmpty: true
+                    });
                 }
             }
             
