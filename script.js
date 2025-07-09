@@ -962,7 +962,23 @@ class MusicalAccompanist {
                         this.selectSlotForPiano(globalChordIndex);
                     });
                     
-                    // Add right-click context menu for options
+                    // Add click handler to select slot for piano input
+                    chordElement.addEventListener('click', (e) => {
+                        // If the slot is beyond current progression, extend the progression
+                        if (globalChordIndex >= this.chordProgression.length) {
+                            while (this.chordProgression.length <= globalChordIndex) {
+                                this.chordProgression.push({
+                                    name: '',
+                                    notes: [],
+                                    duration: '1n',
+                                    isEmpty: true
+                                });
+                            }
+                        }
+                        this.selectSlotForPiano(globalChordIndex);
+                    });
+                    
+                    // Add right-click context menu for additional options
                     chordElement.addEventListener('contextmenu', (e) => {
                         // If the slot is beyond current progression, extend the progression
                         if (globalChordIndex >= this.chordProgression.length) {
@@ -1443,7 +1459,9 @@ class MusicalAccompanist {
                 key.classList.add('highlighted');
             }
         });
-    }    /**
+    }    
+    
+    /**
      * Update chord info display
      */
     updateChordInfo(chord) {
@@ -1461,20 +1479,20 @@ class MusicalAccompanist {
             await this.ensureAudioInitialized();
             
             if (this.selectedNotes.includes(note)) {
-                // Remove note
+                // Remove note (no sound)
                 this.selectedNotes = this.selectedNotes.filter(n => n !== note);
                 keyElement.classList.remove('active');
             } else {
-                // Add note
+                // Add note (with sound)
                 this.selectedNotes.push(note);
                 keyElement.classList.add('active');
+                
+                // Play the note only when selecting
+                this.playNote(note);
             }
             
             // Update display
             this.updateSelectedNotesDisplay();
-            
-            // Play the note
-            this.playNote(note);
             
         } catch (error) {
             console.error('Error toggling note:', error);
@@ -1575,7 +1593,7 @@ class MusicalAccompanist {
         
         // Create chord object
         const chord = {
-            name: this.selectedNotes.join(''),
+            name: this.selectedNotes.join('-'),
             notes: [...this.selectedNotes],
             duration: '1n',
             isDrone: false
@@ -1584,9 +1602,47 @@ class MusicalAccompanist {
         // Add to progression
         if (this.targetChordIndex !== null) {
             this.chordProgression[this.targetChordIndex] = chord;
-            this.targetChordIndex = null;
+            
+            // Auto-select next slot
+            const nextSlotIndex = this.targetChordIndex + 1;
+            
+            // Ensure next slot exists (extend progression if needed)
+            while (this.chordProgression.length <= nextSlotIndex) {
+                this.chordProgression.push({
+                    name: '',
+                    notes: [],
+                    duration: '1n',
+                    isEmpty: true
+                });
+            }
+            
+            // If next slot is empty, select it; otherwise find next empty slot
+            if (this.chordProgression[nextSlotIndex].isEmpty || this.chordProgression[nextSlotIndex].name === '') {
+                this.targetChordIndex = nextSlotIndex;
+            } else {
+                // Find next empty slot
+                let foundEmpty = false;
+                for (let i = nextSlotIndex; i < this.chordProgression.length; i++) {
+                    if (this.chordProgression[i].isEmpty || this.chordProgression[i].name === '') {
+                        this.targetChordIndex = i;
+                        foundEmpty = true;
+                        break;
+                    }
+                }
+                if (!foundEmpty) {
+                    // Create new empty slot
+                    this.chordProgression.push({
+                        name: '',
+                        notes: [],
+                        duration: '1n',
+                        isEmpty: true
+                    });
+                    this.targetChordIndex = this.chordProgression.length - 1;
+                }
+            }
         } else {
             this.chordProgression.push(chord);
+            // No auto-selection when adding to end
         }
         
         // Update display
@@ -1772,6 +1828,7 @@ class MusicalAccompanist {
     selectSlotForPiano(slotIndex) {
         this.targetChordIndex = slotIndex;
         this.updateSelectedSlotDisplay();
+        this.displayChords(); // Refresh display to show visual selection
         this.showStatus(`Selected slot ${slotIndex + 1} for piano input`);
     }
 
