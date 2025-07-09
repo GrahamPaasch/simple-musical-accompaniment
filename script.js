@@ -699,6 +699,36 @@ class MusicalAccompanist {
                 continue;
             }
 
+            // Tempo change e.g. Tempo120 or [Tempo=120]
+            let match = token.match(/^\[?Tempo=?([0-9]+)\]?$/i);
+            if (match) {
+                const bpm = parseInt(match[1]);
+                chords.push({
+                    type: 'tempo',
+                    bpm,
+                    name: `Tempo=${bpm}`,
+                    notes: [],
+                    isTempoEvent: true
+                });
+                continue;
+            }
+
+            // Accelerando/Ritardando e.g. Accel=120:4 or Accel->120:4
+            match = token.match(/^\[?Accel(?:->|=)?([0-9]+):([0-9]+)\]?$/i);
+            if (match) {
+                const target = parseInt(match[1]);
+                const measures = parseInt(match[2]);
+                chords.push({
+                    type: 'accel',
+                    target,
+                    measures,
+                    name: `Accel ${target}:${measures}`,
+                    notes: [],
+                    isTempoEvent: true
+                });
+                continue;
+            }
+
             switch (token.toUpperCase()) {
                 case 'SEGNO':
                     this.segnoIndex = chords.length;
@@ -1179,6 +1209,30 @@ class MusicalAccompanist {
         }
 
         const currentChord = this.chordProgression[this.currentChordIndex];
+        
+        // Handle tempo change events
+        if (currentChord.isTempoEvent) {
+            if (currentChord.type === 'tempo') {
+                this.tempo = currentChord.bpm;
+                document.getElementById('tempo').value = this.tempo;
+                document.getElementById('tempo-display').textContent = this.tempo;
+                this.moveToNextChord();
+                if (this.isPlaying) this.schedulePlayback();
+                return;
+            }
+            
+            if (currentChord.type === 'accel') {
+                const rampDuration = currentChord.measures * (60 / this.tempo);
+                Tone.Transport.bpm.rampTo(currentChord.target, rampDuration);
+                this.tempo = currentChord.target;
+                document.getElementById('tempo').value = currentChord.target;
+                document.getElementById('tempo-display').textContent = currentChord.target;
+                
+                this.moveToNextChord();
+                if (this.isPlaying) this.schedulePlayback();
+                return;
+            }
+        }
         
         // Highlight current chord
         this.highlightCurrentChord();
