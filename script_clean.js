@@ -1138,6 +1138,26 @@ class MusicalAccompanist {
                 
                 // Make chord clickable to preview (but not empty slots)
                 if (!chord.isEmpty) {
+                    // Add chord edit button
+                    const chordEditBtn = document.createElement('button');
+                    chordEditBtn.className = 'chord-edit';
+                    chordEditBtn.innerHTML = '🎹';
+                    chordEditBtn.title = 'Edit chord with piano';
+                    chordEditBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        this.editChordWithPiano(globalChordIndex);
+                        return false;
+                    });
+                    chordEditBtn.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        return false;
+                    });
+                    chordElement.appendChild(chordEditBtn);
+
                     // Add chord delete button
                     const chordDeleteBtn = document.createElement('button');
                     chordDeleteBtn.className = 'chord-delete';
@@ -1284,6 +1304,60 @@ class MusicalAccompanist {
         } catch (error) {
             console.error('Error previewing chord:', error);
             this.showStatus('Error previewing chord');
+        }
+    }
+
+    /**
+     * Edit chord with piano interface
+     */
+    editChordWithPiano(chordIndex) {
+        // Select the chord slot for piano input
+        this.selectSlotForPiano(chordIndex);
+        
+        // Get the current chord to pre-populate the piano
+        const chord = this.chordProgression[chordIndex];
+        if (chord && chord.notes && chord.notes.length > 0) {
+            // Clear current piano selection
+            this.clearSelection();
+            
+            // Pre-select the chord's notes on the piano
+            chord.notes.forEach(note => {
+                const key = document.querySelector(`.key[data-note="${note}"]`);
+                if (key) {
+                    key.classList.add('active');
+                    // Add note to selected notes if not already there
+                    if (!this.selectedNotes.includes(note)) {
+                        this.selectedNotes.push(note);
+                    }
+                }
+            });
+            
+            // Update the selected notes display
+            this.updateSelectedNotesDisplay();
+        }
+        
+        // Scroll to piano section for better visibility
+        const pianoSection = document.querySelector('.piano-section');
+        if (pianoSection) {
+            pianoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        this.showStatus(`Editing chord at position ${chordIndex + 1}. Use piano to select notes, then click "Add to Slot".`);
+    }
+
+    /**
+     * Update selected notes display
+     */
+    updateSelectedNotesDisplay() {
+        const display = document.getElementById('selected-notes');
+        if (display) {
+            if (this.selectedNotes.length === 0) {
+                display.textContent = 'No notes selected';
+                display.className = 'selected-notes';
+            } else {
+                display.textContent = this.selectedNotes.map(note => note.replace(/\d+$/, '')).join(' - ');
+                display.className = 'selected-notes has-notes';
+            }
         }
     }
 
@@ -1559,9 +1633,317 @@ class MusicalAccompanist {
             chordInfo.textContent = `${chord.name}: ${chord.notes.join(', ')}`;
         }
     }
-}
 
-// Initialize the application when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    window.accompanist = new MusicalAccompanist();
-});
+    /**
+     * Edit chord with piano interface
+     */
+    editChordWithPiano(chordIndex) {
+        // Select the chord slot for piano input
+        this.selectSlotForPiano(chordIndex);
+        
+        // Get the current chord to pre-populate the piano
+        const chord = this.chordProgression[chordIndex];
+        if (chord && chord.notes && chord.notes.length > 0) {
+            // Clear current piano selection
+            this.clearSelection();
+            
+            // Pre-select the chord's notes on the piano
+            chord.notes.forEach(note => {
+                const key = document.querySelector(`.key[data-note="${note}"]`);
+                if (key) {
+                    key.classList.add('active');
+                    // Add note to selected notes if not already there
+                    if (!this.selectedNotes.includes(note)) {
+                        this.selectedNotes.push(note);
+                    }
+                }
+            });
+            
+            // Update the selected notes display
+            this.updateSelectedNotesDisplay();
+        }
+        
+        // Scroll to piano section for better visibility
+        const pianoSection = document.querySelector('.piano-section');
+        if (pianoSection) {
+            pianoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        this.showStatus(`Editing chord at position ${chordIndex + 1}. Use piano to select notes, then click "Add to Slot".`);
+    }
+
+    /**
+     * Update selected notes display
+     */
+    updateSelectedNotesDisplay() {
+        const display = document.getElementById('selected-notes');
+        if (display) {
+            if (this.selectedNotes.length === 0) {
+                display.textContent = 'No notes selected';
+                display.className = 'selected-notes';
+            } else {
+                display.textContent = this.selectedNotes.map(note => note.replace(/\d+$/, '')).join(' - ');
+                display.className = 'selected-notes has-notes';
+            }
+        }
+    }
+
+    /**
+     * Start playback
+     */
+    async startPlayback() {
+        console.log('=== STARTPLAYBACK CALLED ===');
+        console.log('Chord progression length:', this.chordProgression.length);
+        
+        if (this.chordProgression.length === 0) {
+            this.showStatus('No chords to play');
+            console.log('No chords to play, returning early');
+            return;
+        }
+
+        try {
+            console.log('Starting playback...');
+            console.log('Current AudioContext state:', Tone.context.state);
+            
+            // Ensure audio context is ready
+            await this.ensureAudioInitialized();
+            
+            this.isPlaying = true;
+            this.isPaused = false;
+            this.currentChordIndex = 0;
+            this.resetNavigationState();
+            
+            // Update UI
+            document.getElementById('play-btn').disabled = true;
+            document.getElementById('pause-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = false;
+            
+            // Set tempo
+            Tone.Transport.bpm.value = this.tempo;
+            
+            // Start the main progression
+            this.schedulePlayback();
+            
+            this.showStatus('Playing...');
+        } catch (error) {
+            console.error('Error starting playback:', error);
+            this.showStatus('Error starting playback. Please try again.');
+            this.stopPlayback();
+        }
+    }
+
+    /**
+     * Schedule the chord progression playback
+     */
+    schedulePlayback() {
+        for (let i = 0; i < this.chordProgression.length; i++) {
+            const chord = this.chordProgression[i];
+            const startTime = i * (60 / this.tempo);
+            
+            Tone.Transport.schedule((time) => {
+                if (!this.isPlaying) return;
+                
+                this.currentChordIndex = i;
+                this.updateProgressionDisplay();
+                
+                const frequencies = this.getChordFrequencies(chord);
+                this.playChord(frequencies, chord);
+                
+                // Schedule metronome if enabled
+                if (this.metronomeEnabled) {
+                    this.playMetronome();
+                }
+                
+                // Check if we've reached the end
+                if (i === this.chordProgression.length - 1) {
+                    this.moveToNextChord();
+                }
+            }, startTime);
+        }
+        
+        Tone.Transport.start();
+    }
+
+    /**
+     * Move to the next chord in the progression
+     */
+    moveToNextChord() {
+        this.currentChordIndex++;
+        
+        if (this.currentChordIndex >= this.chordProgression.length) {
+            if (this.loopMode) {
+                this.currentChordIndex = 0;
+            } else {
+                this.stopPlayback();
+                return;
+            }
+        }
+        
+        this.updateProgressionDisplay();
+    }
+
+    /**
+     * Reset navigation state
+     */
+    resetNavigationState() {
+        this.dsJumped = false;
+        this.dcJumped = false;
+        this.codaIndex = null;
+        this.fineIndex = null;
+    }
+
+    /**
+     * Update the progression display to highlight current chord
+     */
+    updateProgressionDisplay() {
+        const progressionItems = document.querySelectorAll('.progression-item');
+        progressionItems.forEach((item, index) => {
+            if (index === this.currentChordIndex) {
+                item.classList.add('current-chord');
+            } else {
+                item.classList.remove('current-chord');
+            }
+        });
+    }
+
+    /**
+     * Get chord frequencies for playback
+     */
+    getChordFrequencies(chord) {
+        const frequencies = [];
+        
+        chord.notes.forEach(note => {
+            let frequency = Tone.Frequency(note).toFrequency();
+            frequencies.push(frequency);
+        });
+        
+        return frequencies;
+    }
+
+    /**
+     * Play a chord with the given frequencies
+     */
+    playChord(frequencies, chord) {
+        // Release all previous notes
+        this.synth.releaseAll();
+        
+        // Play new chord
+        if (chord.isDrone) {
+            // For drone chords, sustain the notes
+            frequencies.forEach(freq => {
+                this.synth.triggerAttack(freq);
+            });
+        } else {
+            // For regular chords, play with envelope
+            frequencies.forEach(freq => {
+                this.synth.triggerAttackRelease(freq, '2n');
+            });
+        }
+    }
+
+    /**
+     * Play metronome click
+     */
+    playMetronome() {
+        const isAccented = (this.currentChordIndex % this.timeSignature === 0);
+        const note = isAccented ? 'C5' : 'C6';
+        
+        this.metronomeSynth.triggerAttackRelease(note, '16n');
+    }
+
+    /**
+     * Stop playback
+     */
+    stopPlayback() {
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.currentChordIndex = 0;
+        
+        // Stop transport and release all notes
+        Tone.Transport.stop();
+        Tone.Transport.cancel();
+        this.synth.releaseAll();
+        
+        // Update UI
+        document.getElementById('play-btn').disabled = false;
+        document.getElementById('pause-btn').disabled = true;
+        document.getElementById('stop-btn').disabled = true;
+        
+        // Clear progression display highlighting
+        const progressionItems = document.querySelectorAll('.progression-item');
+        progressionItems.forEach(item => {
+            item.classList.remove('current-chord');
+        });
+        
+        this.showStatus('Stopped');
+    }
+
+    /**
+     * Pause playback
+     */
+    pausePlayback() {
+        if (this.isPlaying) {
+            this.isPaused = true;
+            this.isPlaying = false;
+            
+            Tone.Transport.pause();
+            this.synth.releaseAll();
+            
+            // Update UI
+            document.getElementById('play-btn').disabled = false;
+            document.getElementById('pause-btn').disabled = true;
+            
+            this.showStatus('Paused');
+        }
+    }
+
+    /**
+     * Handle Roman numeral chord selection
+     */
+    handleRomanNumeralSelection(romanNumeral) {
+        try {
+            const chord = this.getRomanNumeralChord(romanNumeral);
+            if (chord) {
+                this.highlightPianoKeys(chord.notes);
+                this.updateChordInfo(chord);
+                this.previewChord(chord);
+            }
+        } catch (error) {
+            console.error('Error handling Roman numeral selection:', error);
+            this.showStatus('Error selecting Roman numeral chord');
+        }
+    }
+
+    /**
+     * Get chord from Roman numeral
+     */
+    getRomanNumeralChord(romanNumeral) {
+        const romanNumeralMap = {
+            'I': { name: 'I', notes: ['C4', 'E4', 'G4'] },
+            'ii': { name: 'ii', notes: ['D4', 'F4', 'A4'] },
+            'iii': { name: 'iii', notes: ['E4', 'G4', 'B4'] },
+            'IV': { name: 'IV', notes: ['F4', 'A4', 'C5'] },
+            'V': { name: 'V', notes: ['G4', 'B4', 'D5'] },
+            'vi': { name: 'vi', notes: ['A4', 'C5', 'E5'] },
+            'vii°': { name: 'vii°', notes: ['B4', 'D5', 'F5'] }
+        };
+        
+        return romanNumeralMap[romanNumeral] || null;
+    }
+
+    /**
+     * Highlight piano keys for a chord
+     */
+    highlightPianoKeys(notes) {
+        // Clear previous highlights
+        const keys = document.querySelectorAll('.piano-key');
+        keys.forEach(key => {
+            key.classList.remove('highlighted');
+        });
+        
+        // Highlight new notes
+        notes.forEach(note => {
+            const noteName = note.replace(/\d+/, ''); // Remove octave number
+            const key = document.querySelector(`.piano-key[data-note="${noteName}"]`);
+            if (key) {
+                key.class

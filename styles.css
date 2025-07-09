@@ -388,56 +388,40 @@ section h2 {
     box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
 }
 
-/* Empty chord slots in measures */
-.chord-item.empty-slot {
-    background: transparent;
-    border: 2px dashed #dee2e6;
-    color: #6c757d;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: all 0.3s ease;
-}
-
-.chord-item.empty-slot:hover {
-    border-color: #007bff;
-    opacity: 1;
-    transform: scale(1.05);
-}
-
-.chord-item.empty-slot::before {
-    content: "+";
-    font-size: 1.2rem;
-    font-weight: bold;
-}
-
-.chord-item {
-    background: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 1rem;
-    color: #495057;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    cursor: pointer;
-    border: 1px solid #e9ecef;
-    min-width: 40px;
-    text-align: center;
-    position: relative;
-}
-
-.chord-item:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    border-color: #007bff;
-}
-
-.chord-item.current {
-    background: #007bff;
+/* Edit button for chords */
+.chord-edit {
+    position: absolute;
+    top: -8px;
+    right: 12px; /* Position to the left of delete button */
+    width: 18px;
+    height: 18px;
+    background: #28a745;
     color: white;
-    transform: scale(1.05);
-    box-shadow: 0 3px 10px rgba(0,123,255,0.4);
-    border-color: #007bff;
+    border: 2px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 15;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    line-height: 1;
+    pointer-events: auto;
+}
+
+.chord-item:hover .chord-edit {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.chord-edit:hover {
+    background: #218838 !important;
+    transform: scale(1.2) !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4) !important;
 }
 
 /* Delete button for chords */
@@ -1054,6 +1038,24 @@ footer {
         width: 100%;
         margin: 5px 0;
     }
+}
+
+/* Rest symbol styling for empty slots */
+.rest-symbol {
+    font-size: 1.5em;
+    color: #666;
+    opacity: 0.7;
+    font-family: 'Times New Roman', serif;
+}
+
+.empty-slot:hover .rest-symbol {
+    color: #333;
+    opacity: 1;
+}
+
+.empty-slot.selected-for-piano .rest-symbol {
+    color: #007bff;
+    opacity: 1;
 }
 
 /* Animation for chord transitions */

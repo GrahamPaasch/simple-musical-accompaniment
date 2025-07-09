@@ -886,10 +886,18 @@ class MusicalAccompanist {
         const display = document.getElementById('chord-display');
         display.innerHTML = '';
         
+        // If progression is empty, create some default empty slots
         if (this.chordProgression.length === 0) {
-            display.innerHTML = '<div class="chord-item">No chords loaded</div>';
-            this.updateProgressionInfo();
-            return;
+            // Create 4 empty measures (16 slots in 4/4 time) by default
+            const defaultSlots = this.timeSignature * 4;
+            for (let i = 0; i < defaultSlots; i++) {
+                this.chordProgression.push({
+                    name: '',
+                    notes: [],
+                    duration: '1n',
+                    isEmpty: true
+                });
+            }
         }
 
         // Group chords into measures (4 chords per measure by default)
@@ -941,58 +949,10 @@ class MusicalAccompanist {
                 chordElement.dataset.index = globalChordIndex;
                 
                 if (chord.isEmpty) {
-                    // Empty slot for incomplete measures
+                    // Empty slot for incomplete measures - show as rest
                     chordElement.classList.add('empty-slot');
-                    chordElement.textContent = '';
-                    
-                    // Make empty slots clickable to select for piano input
-                    chordElement.addEventListener('click', () => {
-                        // If the slot is beyond current progression, extend the progression
-                        if (globalChordIndex >= this.chordProgression.length) {
-                            // Extend progression with empty slots up to this index
-                            while (this.chordProgression.length <= globalChordIndex) {
-                                this.chordProgression.push({
-                                    name: '',
-                                    notes: [],
-                                    duration: '1n',
-                                    isEmpty: true
-                                });
-                            }
-                        }
-                        this.selectSlotForPiano(globalChordIndex);
-                    });
-                    
-                    // Add click handler to select slot for piano input
-                    chordElement.addEventListener('click', (e) => {
-                        // If the slot is beyond current progression, extend the progression
-                        if (globalChordIndex >= this.chordProgression.length) {
-                            while (this.chordProgression.length <= globalChordIndex) {
-                                this.chordProgression.push({
-                                    name: '',
-                                    notes: [],
-                                    duration: '1n',
-                                    isEmpty: true
-                                });
-                            }
-                        }
-                        this.selectSlotForPiano(globalChordIndex);
-                    });
-                    
-                    // Add right-click context menu for additional options
-                    chordElement.addEventListener('contextmenu', (e) => {
-                        // If the slot is beyond current progression, extend the progression
-                        if (globalChordIndex >= this.chordProgression.length) {
-                            while (this.chordProgression.length <= globalChordIndex) {
-                                this.chordProgression.push({
-                                    name: '',
-                                    notes: [],
-                                    duration: '1n',
-                                    isEmpty: true
-                                });
-                            }
-                        }
-                        this.showEmptySlotMenu(e, globalChordIndex);
-                    });
+                    chordElement.innerHTML = '<span class="rest-symbol">𝄽</span>'; // Musical rest symbol
+                    chordElement.title = 'Rest (empty beat) - click to select for piano input';
                 } else {
                     chordElement.textContent = chord.name;
                     if (chord.isSingleNote) {
@@ -1034,13 +994,58 @@ class MusicalAccompanist {
                 
                 chordElement.dataset.index = globalChordIndex;
                 
-                // Make chord clickable to preview (but not empty slots)
+                // Add click handlers for ALL slots (empty and filled)
+                chordElement.addEventListener('click', (e) => {
+                    // Don't trigger if clicking on edit/delete buttons
+                    if (e.target.classList.contains('chord-edit') || e.target.classList.contains('chord-delete')) {
+                        return;
+                    }
+                    
+                    // If it's a filled slot, preview the chord
+                    if (!chord.isEmpty) {
+                        this.previewChord(chord);
+                    }
+                    
+                    // Always allow slot selection for piano input
+                    this.selectSlotForPiano(globalChordIndex);
+                });
+                
+                // Add context menu for all slots
+                chordElement.addEventListener('contextmenu', (e) => {
+                    if (chord.isEmpty) {
+                        this.showEmptySlotMenu(e, globalChordIndex);
+                    } else {
+                        this.showContextMenu(e, globalChordIndex);
+                    }
+                });
+                
+                // Add edit and delete buttons only for non-empty slots
                 if (!chord.isEmpty) {
+                    // Add chord edit button
+                    const chordEditBtn = document.createElement('button');
+                    chordEditBtn.className = 'chord-edit';
+                    chordEditBtn.innerHTML = '🎹';
+                    chordEditBtn.title = 'Edit chord with piano';
+                    chordEditBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        this.editChordWithPiano(globalChordIndex);
+                        return false;
+                    });
+                    chordEditBtn.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        return false;
+                    });
+                    chordElement.appendChild(chordEditBtn);
+
                     // Add chord delete button
                     const chordDeleteBtn = document.createElement('button');
                     chordDeleteBtn.className = 'chord-delete';
                     chordDeleteBtn.innerHTML = '×';
-                    chordDeleteBtn.title = 'Clear chord slot';
+                    chordDeleteBtn.title = 'Clear chord (convert to rest)';
                     chordDeleteBtn.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -1055,15 +1060,6 @@ class MusicalAccompanist {
                         return false;
                     });
                     chordElement.appendChild(chordDeleteBtn);
-                    
-                    chordElement.addEventListener('click', async () => {
-                        await this.previewChord(chord);
-                    });
-                    
-                    // Add right-click context menu
-                    chordElement.addEventListener('contextmenu', (e) => {
-                        this.showContextMenu(e, globalChordIndex);
-                    });
                     
                     // Add double-click to edit
                     chordElement.addEventListener('dblclick', () => {
@@ -1251,6 +1247,13 @@ class MusicalAccompanist {
             const frequencies = this.getChordFrequencies(chord);
             this.playChord(frequencies, chord);
             
+            // Update status to show what's playing (chord or rest)
+            if (chord.isEmpty || frequencies.length === 0) {
+                this.showStatus(`Playing rest (beat ${this.currentChordIndex + 1})`);
+            } else {
+                this.showStatus(`Playing: ${chord.name} (beat ${this.currentChordIndex + 1})`);
+            }
+            
             // Schedule metronome if enabled
             if (this.metronomeEnabled) {
                 this.playMetronome();
@@ -1276,20 +1279,30 @@ class MusicalAccompanist {
      * Update the progression display to highlight current chord
      */
     updateProgressionDisplay() {
-        const progressionItems = document.querySelectorAll('.progression-item');
-        progressionItems.forEach((item, index) => {
-            if (index === this.currentChordIndex) {
-                item.classList.add('current-chord');
-            } else {
-                item.classList.remove('current-chord');
-            }
+        // Clear all current highlighting
+        document.querySelectorAll('.chord-item').forEach(item => {
+            item.classList.remove('current');
         });
+        
+        // Highlight current chord
+        const currentChordElement = document.querySelector(`.chord-item[data-index="${this.currentChordIndex}"]`);
+        if (currentChordElement) {
+            currentChordElement.classList.add('current');
+        }
+        
+        // Also refresh the display to ensure highlighting is correct
+        this.displayChords();
     }
 
     /**
      * Get chord frequencies for playback
      */
     getChordFrequencies(chord) {
+        // If chord is empty, return empty array (rest)
+        if (chord.isEmpty || !chord.notes || chord.notes.length === 0) {
+            return [];
+        }
+        
         const frequencies = [];
         
         chord.notes.forEach(note => {
@@ -1306,6 +1319,11 @@ class MusicalAccompanist {
     playChord(frequencies, chord) {
         // Release all previous notes
         this.synth.releaseAll();
+        
+        // If no frequencies (rest), don't play anything
+        if (frequencies.length === 0) {
+            return; // This is a rest - silence
+        }
         
         // Play new chord
         if (chord.isDrone) {
@@ -1875,13 +1893,19 @@ class MusicalAccompanist {
     }
 
     /**
-     * Delete chord at specific index
+     * Delete chord at specific index - converts chord to rest
      */
     deleteChordAtIndex(index) {
         if (index >= 0 && index < this.chordProgression.length) {
-            this.chordProgression.splice(index, 1);
+            // Convert chord to empty rest instead of removing it
+            this.chordProgression[index] = {
+                name: '',
+                notes: [],
+                duration: '1n',
+                isEmpty: true
+            };
             this.displayChords();
-            this.showStatus(`Deleted chord at position ${index + 1}`);
+            this.showStatus(`Cleared chord at position ${index + 1} (converted to rest)`);
         }
     }
 
@@ -2088,8 +2112,6 @@ class MusicalAccompanist {
         beatInput.value = '';
     }
 
-    // ...existing code...
-
     /**
      * Initialize repeat markers drag and drop functionality
      */
@@ -2267,9 +2289,52 @@ class MusicalAccompanist {
             isCustom: true
         };
     }
+
+    /**
+     * Edit chord with piano interface
+     */
+    editChordWithPiano(chordIndex) {
+        // Select the chord slot for piano input
+        this.selectSlotForPiano(chordIndex);
+        
+        // Get the current chord to pre-populate the piano
+        const chord = this.chordProgression[chordIndex];
+        if (chord && chord.notes && chord.notes.length > 0) {
+            // Clear current piano selection
+            this.clearSelection();
+            
+            // Pre-select the chord's notes on the piano
+            chord.notes.forEach(note => {
+                const key = document.querySelector(`.key[data-note="${note}"]`);
+                if (key) {
+                    key.classList.add('active');
+                    // Add note to selected notes if not already there
+                    if (!this.selectedNotes.includes(note)) {
+                        this.selectedNotes.push(note);
+                    }
+                }
+            });
+            
+            // Update the selected notes display
+            this.updateSelectedNotesDisplay();
+        }
+        
+        // Scroll to piano section for better visibility
+        const pianoSection = document.querySelector('.piano-section');
+        if (pianoSection) {
+            pianoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        this.showStatus(`Editing chord at position ${chordIndex + 1}. Use piano to select notes, then click "Add to Slot".`);
+    }
+
+    /**
+     * Initialize the application when the page loads
+     */
+    static init() {
+        window.accompanist = new MusicalAccompanist();
+    }
 }
 
 // Initialize the application when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    window.accompanist = new MusicalAccompanist();
-});
+document.addEventListener('DOMContentLoaded', MusicalAccompanist.init);
