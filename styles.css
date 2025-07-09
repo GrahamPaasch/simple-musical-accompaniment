@@ -334,6 +334,18 @@ section h2 {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+.measure-time-sig {
+    position: absolute;
+    top: -10px;
+    right: 8px;
+    background: #6c757d;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
 .measure.current-measure .measure-number {
     background: #007bff;
     box-shadow: 0 2px 6px rgba(0,123,255,0.3);

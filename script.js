@@ -20,6 +20,7 @@ class MusicalAccompanist {
         this.selectedNotes = []; // For piano keyboard
         this.targetChordIndex = null; // Track which slot to fill with piano selection
         this.timeSignature = 4; // Default to 4/4 time
+        this.measureTimeSignatures = []; // Per-measure time signatures
         this.draggedFromIndex = null;
         this.contextChordIndex = null; // For context menu
         this.editingChordIndex = null; // For chord editing
@@ -344,6 +345,14 @@ class MusicalAccompanist {
 
         this.chordProgression = preset.chords;
         this.tempo = preset.tempo;
+
+        // Generate measure signatures based on current time signature
+        this.measureTimeSignatures = [];
+        let remaining = this.chordProgression.length;
+        while (remaining > 0) {
+            this.measureTimeSignatures.push(this.timeSignature);
+            remaining -= this.timeSignature;
+        }
         
         // Update UI
         document.getElementById('tempo').value = this.tempo;
@@ -447,11 +456,19 @@ class MusicalAccompanist {
 
         this.chordProgression = preset.chords;
         this.tempo = preset.tempo;
-        
+
+        // Generate measure signatures based on current time signature
+        this.measureTimeSignatures = [];
+        let remaining2 = this.chordProgression.length;
+        while (remaining2 > 0) {
+            this.measureTimeSignatures.push(this.timeSignature);
+            remaining2 -= this.timeSignature;
+        }
+
         // Update UI
         document.getElementById('tempo').value = this.tempo;
         document.getElementById('tempo-display').textContent = this.tempo;
-        
+
         this.displayChords();
         this.showStatus(`Loaded preset: ${preset.name}`);
     }
@@ -668,18 +685,43 @@ class MusicalAccompanist {
     parseChordString(input) {
         const chords = [];
         const parts = input.split(/[\s|]+/).filter(part => part.trim());
-        
+
+        // Reset measure time signatures
+        this.measureTimeSignatures = [];
+        let currentSig = this.timeSignature;
+        let chordsInMeasure = 0;
+
         for (const part of parts) {
+            // Check for time signature change token (e.g. "3/4")
+            if (/^\d+\/\d+$/.test(part)) {
+                // If we have started a measure, finalize it
+                if (chordsInMeasure > 0 || this.measureTimeSignatures.length === 0) {
+                    this.measureTimeSignatures.push(currentSig);
+                    chordsInMeasure = 0;
+                }
+                currentSig = parseInt(part.split('/')[0]);
+                continue;
+            }
+
             const chord = this.parseChord(part.trim());
             if (chord) {
                 chords.push(chord);
+                chordsInMeasure++;
+                if (chordsInMeasure >= currentSig) {
+                    this.measureTimeSignatures.push(currentSig);
+                    chordsInMeasure = 0;
+                }
             }
         }
-        
+
+        if (chordsInMeasure > 0) {
+            this.measureTimeSignatures.push(currentSig);
+        }
+
         if (chords.length === 0) {
             throw new Error('No valid chords found');
         }
-        
+
         return chords;
     }
 
@@ -785,17 +827,27 @@ class MusicalAccompanist {
 
         // Group chords into measures (4 chords per measure by default)
         const measuresData = this.groupChordsIntoMeasures(this.chordProgression);
-        
+
         measuresData.forEach((measureChords, measureIndex) => {
             const measureElement = document.createElement('div');
             measureElement.className = 'measure';
             measureElement.dataset.measureIndex = measureIndex;
-            
+
             // Add measure number
             const measureNumber = document.createElement('div');
             measureNumber.className = 'measure-number';
             measureNumber.textContent = (measureIndex + 1).toString();
             measureElement.appendChild(measureNumber);
+
+            // Add time signature indicator if it changes
+            const beats = this.measureTimeSignatures[measureIndex] || this.timeSignature;
+            const prevBeats = measureIndex > 0 ? (this.measureTimeSignatures[measureIndex-1] || this.timeSignature) : null;
+            if (measureIndex === 0 || beats !== prevBeats) {
+                const ts = document.createElement('span');
+                ts.className = 'measure-time-sig';
+                ts.textContent = this.getTimeSignatureText(beats);
+                measureElement.appendChild(ts);
+            }
             
             // Add measure delete button
             const measureDeleteBtn = document.createElement('button');
@@ -986,34 +1038,25 @@ class MusicalAccompanist {
      */
     groupChordsIntoMeasures(chords) {
         const measures = [];
-        let currentMeasure = [];
-        let chordsInCurrentMeasure = 0;
-        const chordsPerMeasure = this.timeSignature; // Use dynamic time signature
-        
-        for (let i = 0; i < chords.length; i++) {
-            const chord = chords[i];
-            
-            // Add chord to current measure
-            currentMeasure.push(chord);
-            chordsInCurrentMeasure++;
-            
-            // Check if we should start a new measure
-            if (chordsInCurrentMeasure >= chordsPerMeasure) {
-                measures.push([...currentMeasure]);
-                currentMeasure = [];
-                chordsInCurrentMeasure = 0;
+        let chordIndex = 0;
+        let measureIndex = 0;
+
+        while (chordIndex < chords.length) {
+            const beats = this.measureTimeSignatures[measureIndex] || this.timeSignature;
+            const measureChords = [];
+
+            for (let i = 0; i < beats; i++) {
+                if (chordIndex < chords.length) {
+                    measureChords.push(chords[chordIndex++]);
+                } else {
+                    measureChords.push({ name: '', notes: [], isEmpty: true });
+                }
             }
+
+            measures.push(measureChords);
+            measureIndex++;
         }
-        
-        // Add any remaining chords in the last measure
-        if (currentMeasure.length > 0) {
-            // Fill incomplete measures with empty spaces for visual consistency
-            while (currentMeasure.length < chordsPerMeasure) {
-                currentMeasure.push({ name: '', notes: [], isEmpty: true });
-            }
-            measures.push(currentMeasure);
-        }
-        
+
         return measures;
     }
 
@@ -1021,18 +1064,29 @@ class MusicalAccompanist {
      * Get the global chord index from measure and chord indices
      */
     getGlobalChordIndex(measureIndex, chordIndex) {
-        const chordsPerMeasure = this.timeSignature;
-        return (measureIndex * chordsPerMeasure) + chordIndex;
+        let index = 0;
+        for (let i = 0; i < measureIndex; i++) {
+            index += this.measureTimeSignatures[i] || this.timeSignature;
+        }
+        return index + chordIndex;
     }
 
     /**
      * Get measure and chord indices from global chord index
      */
     getMeasureIndices(globalIndex) {
-        const chordsPerMeasure = this.timeSignature;
-        const measureIndex = Math.floor(globalIndex / chordsPerMeasure);
-        const chordIndex = globalIndex % chordsPerMeasure;
-        return { measureIndex, chordIndex };
+        let remaining = globalIndex;
+        for (let i = 0; i < this.measureTimeSignatures.length; i++) {
+            const beats = this.measureTimeSignatures[i] || this.timeSignature;
+            if (remaining < beats) {
+                return { measureIndex: i, chordIndex: remaining };
+            }
+            remaining -= beats;
+        }
+
+        const extraMeasures = Math.floor(remaining / this.timeSignature);
+        const chordIndex = remaining % this.timeSignature;
+        return { measureIndex: this.measureTimeSignatures.length + extraMeasures, chordIndex };
     }
 
     /**
@@ -1292,6 +1346,14 @@ class MusicalAccompanist {
     }
 
     /**
+     * Get display text for a time signature
+     */
+    getTimeSignatureText(beats) {
+        const base = (beats === 6 || beats === 8) ? 8 : 4;
+        return `${beats}/${base}`;
+    }
+
+    /**
      * Toggle a note selection on the piano keyboard
      */
     toggleNote(note, keyElement) {
@@ -1487,18 +1549,18 @@ class MusicalAccompanist {
      * Delete an entire measure at the specified index (remove the measure completely)
      */
     deleteMeasure(measureIndex) {
-        const chordsPerMeasure = this.timeSignature;
-        const startIndex = measureIndex * chordsPerMeasure;
-        const endIndex = startIndex + chordsPerMeasure;
-
-        if (startIndex >= this.chordProgression.length) {
+        if (measureIndex < 0 || measureIndex >= this.measureTimeSignatures.length) {
             this.showStatus('Invalid measure index');
             return;
         }
 
+        const chordsPerMeasure = this.measureTimeSignatures[measureIndex] || this.timeSignature;
+        const startIndex = this.getGlobalChordIndex(measureIndex, 0);
+        const endIndex = startIndex + chordsPerMeasure;
+
         // Confirm deletion of the measure
         const measureNumber = measureIndex + 1;
-        const totalMeasures = Math.ceil(this.chordProgression.length / chordsPerMeasure);
+        const totalMeasures = this.measureTimeSignatures.length;
         const confirmMessage = `Delete measure ${measureNumber} completely? This will remove the entire measure and shift subsequent measures left.`;
         
         if (!confirm(confirmMessage)) {
@@ -1520,6 +1582,7 @@ class MusicalAccompanist {
 
         // Remove the entire measure from the progression
         this.chordProgression.splice(startIndex, slotsToRemove);
+        this.measureTimeSignatures.splice(measureIndex, 1);
 
         // Update current chord index if necessary (for playback position)
         if (this.currentChordIndex >= startIndex) {
@@ -1534,21 +1597,14 @@ class MusicalAccompanist {
 
         // If we deleted the last measure(s) and there's nothing left, add one empty measure
         if (this.chordProgression.length === 0) {
-            for (let i = 0; i < chordsPerMeasure; i++) {
-                this.chordProgression.push({
-                    name: '',
-                    notes: [],
-                    duration: '1n',
-                    isEmpty: true
-                });
-            }
+            this.measureTimeSignatures = [];
         }
 
         // Update the display
         this.displayChords();
 
         // Show status message
-        const newTotalMeasures = Math.ceil(this.chordProgression.length / chordsPerMeasure);
+        const newTotalMeasures = this.measureTimeSignatures.length;
         this.showStatus(`Deleted measure ${measureNumber}. Total measures: ${totalMeasures} → ${newTotalMeasures}`);
     }
 
@@ -1907,14 +1963,17 @@ class MusicalAccompanist {
             this.stopPlayback();
         }
 
-        // Create empty slots
-        for (let i = 0; i < totalSlots; i++) {
-            this.chordProgression.push({
-                name: '',
-                notes: [],
-                duration: '1n',
-                isEmpty: true
-            });
+        // Create empty slots and measure signatures
+        for (let m = 0; m < measureCount; m++) {
+            this.measureTimeSignatures.push(this.timeSignature);
+            for (let i = 0; i < chordsPerMeasure; i++) {
+                this.chordProgression.push({
+                    name: '',
+                    notes: [],
+                    duration: '1n',
+                    isEmpty: true
+                });
+            }
         }
 
         // Update display
@@ -1993,12 +2052,14 @@ class MusicalAccompanist {
             return;
         }
         
-        if (!beatNumber || beatNumber < 1 || beatNumber > this.timeSignature) {
-            this.showStatus(`Please enter a valid beat number (1-${this.timeSignature})`);
+        const measureIndex = measureNumber - 1;
+        const chordsPerMeasure = this.measureTimeSignatures[measureIndex] || this.timeSignature;
+
+        if (!beatNumber || beatNumber < 1 || beatNumber > chordsPerMeasure) {
+            this.showStatus(`Please enter a valid beat number (1-${chordsPerMeasure})`);
             return;
         }
-        
-        const measureIndex = measureNumber - 1;
+
         const beatIndex = beatNumber - 1;
         const globalIndex = this.getGlobalChordIndex(measureIndex, beatIndex);
         
@@ -2060,6 +2121,7 @@ class MusicalAccompanist {
         }
 
         this.chordProgression = [];
+        this.measureTimeSignatures = [];
         this.currentChordIndex = 0;
         this.clearSlotSelection();
         this.displayChords();
