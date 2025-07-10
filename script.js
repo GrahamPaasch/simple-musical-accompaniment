@@ -367,12 +367,38 @@ class MusicalAccompanist {
             this.createEmptyMeasures();
         });
 
-        // Roman numeral chord buttons
+        // Roman numeral chord buttons and tabs
         document.querySelectorAll('.roman-chord-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 await this.selectRomanChord(e.target.dataset.roman);
             });
         });
+
+        // Chord type tabs
+        document.querySelectorAll('.chord-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                this.switchChordTab(e.target.dataset.type);
+            });
+        });
+    }
+
+    /**
+     * Switch between chord type tabs
+     */
+    switchChordTab(tabType) {
+        // Update tab buttons
+        document.querySelectorAll('.chord-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`.chord-tab[data-type="${tabType}"]`).classList.add('active');
+
+        // Update chord groups
+        document.querySelectorAll('.chord-group').forEach(group => {
+            group.classList.remove('active');
+        });
+        document.querySelector(`.chord-group[data-group="${tabType}"]`).classList.add('active');
+
+        this.showStatus(`Switched to ${tabType} chords`);
     }
 
     /**
@@ -1422,41 +1448,216 @@ class MusicalAccompanist {
         
         const scale = this.key.mode === 'major' ? majorScale : minorScale;
         
-        // Map Roman numerals to scale degrees (0-indexed)
+        // Enhanced Roman numeral mapping with new chord types
         const romanNumeralMap = {
-            'I': 0,
-            'ii': 1,
-            'iii': 2,
-            'IV': 3,
-            'V': 4,
-            'vi': 5,
-            'vii°': 6,
-            'i': 0,
-            'ii°': 1,
-            'III': 2,
-            'iv': 3,
-            'v': 4,
-            'VI': 5,
-            'VII': 6
+            // Basic triads
+            'I': { degree: 0, quality: 'major' },
+            'ii': { degree: 1, quality: 'minor' },
+            'iii': { degree: 2, quality: 'minor' },
+            'IV': { degree: 3, quality: 'major' },
+            'V': { degree: 4, quality: 'major' },
+            'vi': { degree: 5, quality: 'minor' },
+            'vii°': { degree: 6, quality: 'diminished' },
+            
+            // Minor key versions
+            'i': { degree: 0, quality: 'minor' },
+            'ii°': { degree: 1, quality: 'diminished' },
+            'III': { degree: 2, quality: 'major' },
+            'iv': { degree: 3, quality: 'minor' },
+            'v': { degree: 4, quality: 'minor' },
+            'VI': { degree: 5, quality: 'major' },
+            'VII': { degree: 6, quality: 'major' },
+            
+            // Suspended chords
+            'Isus4': { degree: 0, quality: 'sus4' },
+            'Vsus4': { degree: 4, quality: 'sus4' },
+            'IVsus2': { degree: 3, quality: 'sus2' },
+            
+            // 7th chords
+            'Imaj7': { degree: 0, quality: 'major7' },
+            'IVmaj7': { degree: 3, quality: 'major7' },
+            'iim7': { degree: 1, quality: 'minor7' },
+            'iiim7': { degree: 2, quality: 'minor7' },
+            'vim7': { degree: 5, quality: 'minor7' },
+            'V7': { degree: 4, quality: 'dominant7' },
+            'VII7': { degree: 6, quality: 'dominant7' },
+            
+            // Half-diminished 7th
+            'viim7b5': { degree: 6, quality: 'half-diminished7' },
+            'iim7b5': { degree: 1, quality: 'half-diminished7' },
+            
+            // Fully diminished 7th
+            'viio7': { degree: 6, quality: 'fully-diminished7' },
+            'iio7': { degree: 1, quality: 'fully-diminished7' },
+            
+            // Augmented
+            'III+': { degree: 2, quality: 'augmented' },
+            'V+': { degree: 4, quality: 'augmented' },
+            
+            // Borrowed chords (flat chords)
+            'bVII': { degree: 6, quality: 'major', flat: true },
+            'bVI': { degree: 5, quality: 'major', flat: true },
+            'bII': { degree: 1, quality: 'major', flat: true },
+            
+            // Secondary dominants
+            'V7/V': { target: 4, quality: 'secondary-dominant' },
+            'V7/vi': { target: 5, quality: 'secondary-dominant' },
+            'V7/IV': { target: 3, quality: 'secondary-dominant' },
+            'V7/ii': { target: 1, quality: 'secondary-dominant' },
+            'V7/iii': { target: 2, quality: 'secondary-dominant' }
         };
         
         if (!(romanNumeral in romanNumeralMap)) {
             return null;
         }
         
-        const degree = romanNumeralMap[romanNumeral];
-        const rootIndex = (keyIndex + scale[degree]) % 12;
-        const thirdIndex = (keyIndex + scale[(degree + 2) % 7]) % 12;
-        const fifthIndex = (keyIndex + scale[(degree + 4) % 7]) % 12;
+        const chordInfo = romanNumeralMap[romanNumeral];
         
+        // Handle secondary dominants
+        if (chordInfo.quality === 'secondary-dominant') {
+            return this.buildSecondaryDominant(chordInfo.target, romanNumeral);
+        }
+        
+        // Handle regular chords
+        let degree = chordInfo.degree;
+        let rootIndex;
+        
+        if (chordInfo.flat) {
+            // For borrowed chords, lower the degree by a semitone
+            rootIndex = (keyIndex + scale[degree] - 1 + 12) % 12;
+        } else {
+            rootIndex = (keyIndex + scale[degree]) % 12;
+        }
+        
+        return this.buildChordFromRoot(rootIndex, chordInfo.quality, romanNumeral);
+    }
+    
+    /**
+     * Build a secondary dominant chord
+     */
+    buildSecondaryDominant(targetDegree, romanNumeral) {
+        const keyIndex = this.noteToIndex[this.key.tonic];
+        const majorScale = [0, 2, 4, 5, 7, 9, 11];
+        const minorScale = [0, 2, 3, 5, 7, 8, 10];
+        const scale = this.key.mode === 'major' ? majorScale : minorScale;
+        
+        // Get the target chord's root
+        const targetRootIndex = (keyIndex + scale[targetDegree]) % 12;
+        
+        // Build dominant 7th chord a fifth above the target
+        const dominantRootIndex = (targetRootIndex + 7) % 12;
+        
+        return this.buildChordFromRoot(dominantRootIndex, 'dominant7', romanNumeral);
+    }
+    
+    /**
+     * Build a chord from a root note and quality
+     */
+    buildChordFromRoot(rootIndex, quality, displayName) {
         const rootNote = this.indexToNote[rootIndex] + '4';
-        const thirdNote = this.indexToNote[thirdIndex] + '4';
-        const fifthNote = this.indexToNote[fifthIndex] + '4';
+        let notes = [rootNote];
+        
+        switch (quality) {
+            case 'major':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 4) % 12] + '4',
+                    this.indexToNote[(rootIndex + 7) % 12] + '4'
+                ];
+                break;
+                
+            case 'minor':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 3) % 12] + '4',
+                    this.indexToNote[(rootIndex + 7) % 12] + '4'
+                ];
+                break;
+                
+            case 'diminished':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 3) % 12] + '4',
+                    this.indexToNote[(rootIndex + 6) % 12] + '4'
+                ];
+                break;
+                
+            case 'augmented':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 4) % 12] + '4',
+                    this.indexToNote[(rootIndex + 8) % 12] + '4'
+                ];
+                break;
+                
+            case 'sus4':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 5) % 12] + '4',
+                    this.indexToNote[(rootIndex + 7) % 12] + '4'
+                ];
+                break;
+                
+            case 'sus2':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 2) % 12] + '4',
+                    this.indexToNote[(rootIndex + 7) % 12] + '4'
+                ];
+                break;
+                
+            case 'major7':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 4) % 12] + '4',
+                    this.indexToNote[(rootIndex + 7) % 12] + '4',
+                    this.indexToNote[(rootIndex + 11) % 12] + '4'
+                ];
+                break;
+                
+            case 'minor7':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 3) % 12] + '4',
+                    this.indexToNote[(rootIndex + 7) % 12] + '4',
+                    this.indexToNote[(rootIndex + 10) % 12] + '4'
+                ];
+                break;
+                
+            case 'dominant7':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 4) % 12] + '4',
+                    this.indexToNote[(rootIndex + 7) % 12] + '4',
+                    this.indexToNote[(rootIndex + 10) % 12] + '4'
+                ];
+                break;
+                
+            case 'half-diminished7':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 3) % 12] + '4',
+                    this.indexToNote[(rootIndex + 6) % 12] + '4',
+                    this.indexToNote[(rootIndex + 10) % 12] + '4'
+                ];
+                break;
+                
+            case 'fully-diminished7':
+                notes = [
+                    rootNote,
+                    this.indexToNote[(rootIndex + 3) % 12] + '4',
+                    this.indexToNote[(rootIndex + 6) % 12] + '4',
+                    this.indexToNote[(rootIndex + 9) % 12] + '4'
+                ];
+                break;
+        }
         
         return {
-            name: romanNumeral,
-            notes: [rootNote, thirdNote, fifthNote],
-            duration: '1n'
+            name: displayName,
+            notes: notes,
+            duration: '1n',
+            isRomanNumeral: true,
+            chordQuality: quality
         };
     }
 
@@ -1485,7 +1686,30 @@ class MusicalAccompanist {
     updateChordInfo(chord) {
         const chordInfo = document.getElementById('roman-chord-display');
         if (chordInfo && chord) {
-            chordInfo.textContent = `${chord.name}: ${chord.notes.join(', ')}`;
+            let description = `${chord.name}: ${chord.notes.join(', ')}`;
+            
+            // Add chord quality information
+            if (chord.chordQuality) {
+                const qualityDescriptions = {
+                    'major': 'Major triad',
+                    'minor': 'Minor triad',
+                    'diminished': 'Diminished triad',
+                    'augmented': 'Augmented triad',
+                    'sus4': 'Suspended 4th',
+                    'sus2': 'Suspended 2nd',
+                    'major7': 'Major 7th chord',
+                    'minor7': 'Minor 7th chord',
+                    'dominant7': 'Dominant 7th chord',
+                    'half-diminished7': 'Half-diminished 7th',
+                    'fully-diminished7': 'Fully diminished 7th',
+                    'secondary-dominant': 'Secondary dominant'
+                };
+                
+                const qualityDesc = qualityDescriptions[chord.chordQuality] || chord.chordQuality;
+                description += ` (${qualityDesc})`;
+            }
+            
+            chordInfo.innerHTML = description;
         }
     }
 
@@ -1726,27 +1950,13 @@ class MusicalAccompanist {
      * Update Roman numeral buttons based on current key
      */
     updateRomanNumeralButtons() {
+        // Get all tabs and buttons
+        const tabs = document.querySelectorAll('.chord-tab');
+        const groups = document.querySelectorAll('.chord-group');
         const buttons = document.querySelectorAll('.roman-chord-btn');
         
-        if (this.key.mode === 'major') {
-            // Major key Roman numerals
-            const majorNumerals = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
-            buttons.forEach((button, index) => {
-                if (index < majorNumerals.length) {
-                    button.textContent = majorNumerals[index];
-                    button.dataset.roman = majorNumerals[index];
-                }
-            });
-        } else {
-            // Minor key Roman numerals
-            const minorNumerals = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'];
-            buttons.forEach((button, index) => {
-                if (index < minorNumerals.length) {
-                    button.textContent = minorNumerals[index];
-                    button.dataset.roman = minorNumerals[index];
-                }
-            });
-        }
+        // Update buttons for current key - this is handled by data-roman attributes
+        // and the enhanced getRomanNumeralChord method
         
         // Clear any previous selection
         buttons.forEach(btn => btn.classList.remove('selected'));
@@ -1768,13 +1978,86 @@ class MusicalAccompanist {
                 // Update the selected Roman numeral button
                 this.updateSelectedRomanNumeral(romanNumeral);
                 
-                this.showStatus(`Selected ${romanNumeral} chord`);
+                // If a slot is selected, add the chord to the progression
+                if (this.targetChordIndex !== null) {
+                    this.addRomanChordToProgression(chord);
+                } else {
+                    this.showStatus(`Selected ${romanNumeral} chord - Select a slot to add it to progression`);
+                }
             } else {
                 this.showStatus(`Unknown Roman numeral: ${romanNumeral}`);
             }
         } catch (error) {
             console.error('Error selecting Roman chord:', error);
             this.showStatus('Error selecting Roman numeral chord');
+        }
+    }
+
+    /**
+     * Add a Roman numeral chord to the progression
+     */
+    addRomanChordToProgression(chord) {
+        if (this.targetChordIndex !== null) {
+            // Ensure the slot exists
+            while (this.chordProgression.length <= this.targetChordIndex) {
+                this.chordProgression.push({
+                    name: '',
+                    notes: [],
+                    duration: '1n',
+                    isEmpty: true
+                });
+            }
+            
+            // Add the chord
+            this.chordProgression[this.targetChordIndex] = chord;
+            
+            // Auto-select next slot
+            const nextSlotIndex = this.targetChordIndex + 1;
+            
+            // Ensure next slot exists (extend progression if needed)
+            while (this.chordProgression.length <= nextSlotIndex) {
+                this.chordProgression.push({
+                    name: '',
+                    notes: [],
+                    duration: '1n',
+                    isEmpty: true
+                });
+            }
+            
+            // If next slot is empty, select it; otherwise find next empty slot
+            if (this.chordProgression[nextSlotIndex].isEmpty || this.chordProgression[nextSlotIndex].name === '') {
+                this.targetChordIndex = nextSlotIndex;
+            } else {
+                // Find next empty slot
+                let foundEmpty = false;
+                for (let i = nextSlotIndex; i < this.chordProgression.length; i++) {
+                    if (this.chordProgression[i].isEmpty || this.chordProgression[i].name === '') {
+                        this.targetChordIndex = i;
+                        foundEmpty = true;
+                        break;
+                    }
+                }
+                if (!foundEmpty) {
+                    // Create new empty slot
+                    this.chordProgression.push({
+                        name: '',
+                        notes: [],
+                        duration: '1n',
+                        isEmpty: true
+                    });
+                    this.targetChordIndex = this.chordProgression.length - 1;
+                }
+            }
+            
+            // Update display
+            this.displayChords();
+            this.updateSelectedSlotDisplay();
+            
+            this.showStatus(`Added ${chord.name} chord to progression (slot ${this.targetChordIndex})`);
+        } else {
+            this.chordProgression.push(chord);
+            this.displayChords();
+            this.showStatus(`Added ${chord.name} chord to end of progression`);
         }
     }
 
