@@ -831,15 +831,15 @@ class MusicalAccompanist {
      * Parse Roman numeral chord notation
      */
     parseRomanNumeralChord(chordName) {
-        // Roman numeral patterns: I, ii, iii, IV, V, vi, vii°
-        const romanPattern = /^([IVX]+|[ivx]+)([°o]?)([7]?)$/i;
+        // Enhanced Roman numeral patterns to handle more chord types
+        const romanPattern = /^([IVX]+|[ivx]+)([°o]?)(maj7|7|sus4|sus2|\+|b5)?$/i;
         const match = chordName.match(romanPattern);
         
         if (!match) return null;
         
         const romanNumeral = match[1];
         const isDiminished = match[2] !== '';
-        const isSeventh = match[3] !== '';
+        const chordModifier = match[3] || '';
         
         // Convert Roman numeral to scale degree (0-based)
         const romanToScale = {
@@ -872,24 +872,57 @@ class MusicalAccompanist {
         
         if (isDiminished) {
             chordType = 'dim';
-        } else if (this.key.mode === 'major') {
-            // In major keys: I, IV, V are major; ii, iii, vi are minor
-            if ([0, 3, 4].includes(scaleDegree)) {
-                chordType = '';  // major
-            } else {
-                chordType = 'm'; // minor
-            }
+        } else if (chordModifier === '+') {
+            chordType = 'aug';
+        } else if (chordModifier === 'sus4') {
+            chordType = 'sus4';
+        } else if (chordModifier === 'sus2') {
+            chordType = 'sus2';
         } else {
-            // In minor keys: i, iv, v are minor; III, VI, VII are major
-            if ([0, 3, 4].includes(scaleDegree)) {
-                chordType = 'm'; // minor
+            // Determine major/minor based on mode and scale degree
+            if (this.key.mode === 'major') {
+                // In major keys: I, IV, V are major; ii, iii, vi are minor; vii is diminished
+                if ([0, 3, 4].includes(scaleDegree)) {
+                    chordType = '';  // major
+                } else if ([1, 2, 5].includes(scaleDegree)) {
+                    chordType = 'm'; // minor
+                } else if (scaleDegree === 6) {
+                    chordType = 'dim'; // diminished
+                }
             } else {
-                chordType = '';  // major
+                // In minor keys: i, iv, v are minor; III, VI, VII are major; ii is diminished
+                if ([0, 3, 4].includes(scaleDegree)) {
+                    chordType = 'm'; // minor
+                } else if ([2, 5, 6].includes(scaleDegree)) {
+                    chordType = '';  // major
+                } else if (scaleDegree === 1) {
+                    chordType = 'dim'; // diminished
+                }
+            }
+            
+            // Override with explicit case indication when provided
+            // Uppercase roman numerals typically indicate major chords
+            // Lowercase roman numerals typically indicate minor chords
+            if (isUpperCase && !['vii', 'ii'].includes(romanNumeral.toLowerCase()) && chordModifier !== '°' && chordModifier !== 'o') {
+                if (chordType === 'm') chordType = ''; // Force major if uppercase
+            } else if (!isUpperCase && chordType === '') {
+                if (!['III', 'VI', 'VII'].includes(romanNumeral.toUpperCase()) || this.key.mode === 'major') {
+                    chordType = 'm'; // Force minor if lowercase
+                }
             }
         }
         
-        if (isSeventh) {
+        // Handle 7th chords
+        if (chordModifier === '7') {
             chordType += '7';
+        } else if (chordModifier === 'maj7') {
+            chordType = chordType.replace('m', '') + 'maj7';
+        } else if (chordModifier === 'b5') {
+            if (chordType === 'm') {
+                chordType = 'm7b5'; // half-diminished
+            } else {
+                chordType += 'b5';
+            }
         }
         
         // Build the actual chord name
@@ -900,6 +933,7 @@ class MusicalAccompanist {
         if (chord) {
             chord.name = chordName; // Keep the original Roman numeral name
             chord.actualChord = actualChordName; // Store the actual chord name
+            chord.isRomanNumeral = true;
         }
         
         return chord;
@@ -1442,49 +1476,80 @@ class MusicalAccompanist {
      * Get chord from Roman numeral
      */
     getRomanNumeralChord(romanNumeral) {
+        // First try to use the dynamic parsing method for simple roman numerals
+        const simpleRomanPattern = /^([IVX]+|[ivx]+)([°o]?)(maj7|7|sus4|sus2|\+)?$/i;
+        if (simpleRomanPattern.test(romanNumeral)) {
+            const parsedChord = this.parseRomanNumeralChord(romanNumeral);
+            if (parsedChord) {
+                return parsedChord;
+            }
+        }
+        
         const keyIndex = this.noteToIndex[this.key.tonic];
         const majorScale = [0, 2, 4, 5, 7, 9, 11]; // Major scale intervals
         const minorScale = [0, 2, 3, 5, 7, 8, 10]; // Natural minor scale intervals
         
         const scale = this.key.mode === 'major' ? majorScale : minorScale;
         
-        // Enhanced Roman numeral mapping with new chord types
+        // Enhanced Roman numeral mapping with context-aware chord types
+        // Basic triads - quality depends on current mode
+        const getBasicTriadQuality = (degree) => {
+            if (this.key.mode === 'major') {
+                // Major key: I, IV, V are major; ii, iii, vi are minor; vii is diminished
+                if ([0, 3, 4].includes(degree)) return 'major';
+                if ([1, 2, 5].includes(degree)) return 'minor';
+                if (degree === 6) return 'diminished';
+            } else {
+                // Minor key: i, iv, v are minor; III, VI, VII are major; ii is diminished
+                if ([0, 3, 4].includes(degree)) return 'minor';
+                if ([2, 5, 6].includes(degree)) return 'major';
+                if (degree === 1) return 'diminished';
+            }
+            return 'major'; // fallback
+        };
+        
         const romanNumeralMap = {
-            // Basic triads
-            'I': { degree: 0, quality: 'major' },
-            'ii': { degree: 1, quality: 'minor' },
-            'iii': { degree: 2, quality: 'minor' },
-            'IV': { degree: 3, quality: 'major' },
-            'V': { degree: 4, quality: 'major' },
-            'vi': { degree: 5, quality: 'minor' },
+            // Basic triads - dynamically determined by mode
+            'I': { degree: 0, quality: getBasicTriadQuality(0) },
+            'ii': { degree: 1, quality: getBasicTriadQuality(1) },
+            'iii': { degree: 2, quality: getBasicTriadQuality(2) },
+            'IV': { degree: 3, quality: getBasicTriadQuality(3) },
+            'V': { degree: 4, quality: getBasicTriadQuality(4) },
+            'vi': { degree: 5, quality: getBasicTriadQuality(5) },
             'vii°': { degree: 6, quality: 'diminished' },
             
             // Minor key versions
-            'i': { degree: 0, quality: 'minor' },
-            'ii°': { degree: 1, quality: 'diminished' },
-            'III': { degree: 2, quality: 'major' },
-            'iv': { degree: 3, quality: 'minor' },
-            'v': { degree: 4, quality: 'minor' },
-            'VI': { degree: 5, quality: 'major' },
-            'VII': { degree: 6, quality: 'major' },
+            'i': { degree: 0, quality: getBasicTriadQuality(0) },
+            'ii°': { degree: 1, quality: getBasicTriadQuality(1) },
+            'III': { degree: 2, quality: getBasicTriadQuality(2) },
+            'iv': { degree: 3, quality: getBasicTriadQuality(3) },
+            'v': { degree: 4, quality: getBasicTriadQuality(4) },
+            'VI': { degree: 5, quality: getBasicTriadQuality(5) },
+            'VII': { degree: 6, quality: getBasicTriadQuality(6) },
             
             // Suspended chords
             'Isus4': { degree: 0, quality: 'sus4' },
             'Vsus4': { degree: 4, quality: 'sus4' },
             'IVsus2': { degree: 3, quality: 'sus2' },
             
-            // 7th chords
-            'Imaj7': { degree: 0, quality: 'major7' },
-            'IVmaj7': { degree: 3, quality: 'major7' },
-            'iim7': { degree: 1, quality: 'minor7' },
-            'iiim7': { degree: 2, quality: 'minor7' },
-            'vim7': { degree: 5, quality: 'minor7' },
+            // 7th chords - context-aware
+            'Imaj7': { degree: 0, quality: this.key.mode === 'major' ? 'major7' : 'minor7' },
+            'IVmaj7': { degree: 3, quality: this.key.mode === 'major' ? 'major7' : 'minor7' },
+            'iim7': { degree: 1, quality: this.key.mode === 'major' ? 'minor7' : 'half-diminished7' },
+            'iiim7': { degree: 2, quality: this.key.mode === 'major' ? 'minor7' : 'major7' },
+            'vim7': { degree: 5, quality: this.key.mode === 'major' ? 'minor7' : 'major7' },
             'V7': { degree: 4, quality: 'dominant7' },
             'VII7': { degree: 6, quality: 'dominant7' },
             
+            // Minor key 7th chords (explicit)
+            'imaj7': { degree: 0, quality: 'minor7' },
+            'ivmaj7': { degree: 3, quality: 'minor7' },
+            'IIImaj7': { degree: 2, quality: 'major7' },
+            'VImaj7': { degree: 5, quality: 'major7' },
+            'iim7b5': { degree: 1, quality: 'half-diminished7' },
+            
             // Half-diminished 7th
             'viim7b5': { degree: 6, quality: 'half-diminished7' },
-            'iim7b5': { degree: 1, quality: 'half-diminished7' },
             
             // Fully diminished 7th
             'viio7': { degree: 6, quality: 'fully-diminished7' },
@@ -1950,16 +2015,102 @@ class MusicalAccompanist {
      * Update Roman numeral buttons based on current key
      */
     updateRomanNumeralButtons() {
-        // Get all tabs and buttons
-        const tabs = document.querySelectorAll('.chord-tab');
-        const groups = document.querySelectorAll('.chord-group');
-        const buttons = document.querySelectorAll('.roman-chord-btn');
+        // Define the standard button mappings (what they should be for each mode)
+        const triadMappings = {
+            major: [
+                { roman: 'I', title: 'Tonic major triad' },
+                { roman: 'ii', title: 'Supertonic minor triad' },
+                { roman: 'iii', title: 'Mediant minor triad' },
+                { roman: 'IV', title: 'Subdominant major triad' },
+                { roman: 'V', title: 'Dominant major triad' },
+                { roman: 'vi', title: 'Submediant minor triad' },
+                { roman: 'vii°', title: 'Leading tone diminished triad' }
+            ],
+            minor: [
+                { roman: 'i', title: 'Tonic minor triad' },
+                { roman: 'ii°', title: 'Supertonic diminished triad' },
+                { roman: 'III', title: 'Mediant major triad' },
+                { roman: 'iv', title: 'Subdominant minor triad' },
+                { roman: 'v', title: 'Dominant minor triad' },
+                { roman: 'VI', title: 'Submediant major triad' },
+                { roman: 'VII', title: 'Subtonic major triad' }
+            ]
+        };
         
-        // Update buttons for current key - this is handled by data-roman attributes
-        // and the enhanced getRomanNumeralChord method
+        // Update basic triad buttons
+        const triadButtons = document.querySelectorAll('.chord-group[data-group="triads"] .category-label:first-of-type + .roman-numeral-buttons .roman-chord-btn');
+        const currentMappings = triadMappings[this.key.mode];
+        
+        triadButtons.forEach((button, index) => {
+            if (index < currentMappings.length) {
+                const mapping = currentMappings[index];
+                button.setAttribute('data-roman', mapping.roman);
+                button.textContent = mapping.roman;
+                button.setAttribute('title', mapping.title);
+            }
+        });
+        
+        // Update 7th chord buttons
+        const seventhMappings = {
+            major: {
+                'Imaj7': { roman: 'Imaj7', title: 'Tonic major 7th' },
+                'IVmaj7': { roman: 'IVmaj7', title: 'Subdominant major 7th' },
+                'iim7': { roman: 'iim7', title: 'Supertonic minor 7th' },
+                'iiim7': { roman: 'iiim7', title: 'Mediant minor 7th' },
+                'vim7': { roman: 'vim7', title: 'Submediant minor 7th' },
+                'V7': { roman: 'V7', title: 'Dominant 7th chord' },
+                'VII7': { roman: 'VII7', title: 'Leading tone 7th' }
+            },
+            minor: {
+                'Imaj7': { roman: 'imaj7', title: 'Tonic minor major 7th' },
+                'IVmaj7': { roman: 'ivmaj7', title: 'Subdominant minor major 7th' },
+                'iim7': { roman: 'iim7b5', title: 'Supertonic half-diminished 7th' },
+                'iiim7': { roman: 'IIImaj7', title: 'Mediant major 7th' },
+                'vim7': { roman: 'VImaj7', title: 'Submediant major 7th' },
+                'V7': { roman: 'V7', title: 'Dominant 7th chord' },
+                'VII7': { roman: 'VII7', title: 'Subtonic dominant 7th' }
+            }
+        };
+        
+        const seventhButtons = document.querySelectorAll('.chord-group[data-group="sevenths"] .roman-chord-btn');
+        const currentSeventhMappings = seventhMappings[this.key.mode];
+        
+        seventhButtons.forEach(button => {
+            // Get the button's current roman numeral or use its original data attribute
+            let currentRoman = button.getAttribute('data-roman');
+            
+            // We need to find the original mapping key for this button
+            // First check if it's already a key in the current mode mappings
+            if (currentSeventhMappings[currentRoman]) {
+                const mapping = currentSeventhMappings[currentRoman];
+                button.setAttribute('data-roman', mapping.roman);
+                button.textContent = mapping.roman;
+                button.setAttribute('title', mapping.title);
+            } else {
+                // Try to find it in the opposite mode's mappings (reverse lookup)
+                const oppositeMappings = seventhMappings[this.key.mode === 'major' ? 'minor' : 'major'];
+                let originalKey = null;
+                
+                // Find which original key produces this current roman numeral
+                for (const [key, mapping] of Object.entries(oppositeMappings)) {
+                    if (mapping.roman === currentRoman) {
+                        originalKey = key;
+                        break;
+                    }
+                }
+                
+                // If we found the original key, apply the current mode's mapping
+                if (originalKey && currentSeventhMappings[originalKey]) {
+                    const mapping = currentSeventhMappings[originalKey];
+                    button.setAttribute('data-roman', mapping.roman);
+                    button.textContent = mapping.roman;
+                    button.setAttribute('title', mapping.title);
+                }
+            }
+        });
         
         // Clear any previous selection
-        buttons.forEach(btn => btn.classList.remove('selected'));
+        document.querySelectorAll('.roman-chord-btn').forEach(btn => btn.classList.remove('selected'));
         
         console.log(`Roman numeral buttons updated for key: ${this.key.tonic} ${this.key.mode}`);
     }

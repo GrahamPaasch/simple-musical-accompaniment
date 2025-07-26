@@ -390,7 +390,104 @@ class MusicalAccompanist {
     }
 
     updateRomanNumeralButtons() {
-        // Placeholder - implement if needed
+        // Define the standard button mappings (what they should be for each mode)
+        const triadMappings = {
+            major: [
+                { roman: 'I', title: 'Tonic major triad' },
+                { roman: 'ii', title: 'Supertonic minor triad' },
+                { roman: 'iii', title: 'Mediant minor triad' },
+                { roman: 'IV', title: 'Subdominant major triad' },
+                { roman: 'V', title: 'Dominant major triad' },
+                { roman: 'vi', title: 'Submediant minor triad' },
+                { roman: 'vii°', title: 'Leading tone diminished triad' }
+            ],
+            minor: [
+                { roman: 'i', title: 'Tonic minor triad' },
+                { roman: 'ii°', title: 'Supertonic diminished triad' },
+                { roman: 'III', title: 'Mediant major triad' },
+                { roman: 'iv', title: 'Subdominant minor triad' },
+                { roman: 'v', title: 'Dominant minor triad' },
+                { roman: 'VI', title: 'Submediant major triad' },
+                { roman: 'VII', title: 'Subtonic major triad' }
+            ]
+        };
+        
+        // Update basic triad buttons
+        const triadButtons = document.querySelectorAll('.chord-group[data-group="triads"] .category-label:first-of-type + .roman-numeral-buttons .roman-chord-btn');
+        const currentMappings = triadMappings[this.key.mode];
+        
+        triadButtons.forEach((button, index) => {
+            if (index < currentMappings.length) {
+                const mapping = currentMappings[index];
+                button.setAttribute('data-roman', mapping.roman);
+                button.textContent = mapping.roman;
+                button.setAttribute('title', mapping.title);
+            }
+        });
+        
+        // Update 7th chord buttons
+        const seventhMappings = {
+            major: {
+                'Imaj7': { roman: 'Imaj7', title: 'Tonic major 7th' },
+                'IVmaj7': { roman: 'IVmaj7', title: 'Subdominant major 7th' },
+                'iim7': { roman: 'iim7', title: 'Supertonic minor 7th' },
+                'iiim7': { roman: 'iiim7', title: 'Mediant minor 7th' },
+                'vim7': { roman: 'vim7', title: 'Submediant minor 7th' },
+                'V7': { roman: 'V7', title: 'Dominant 7th chord' },
+                'VII7': { roman: 'VII7', title: 'Leading tone 7th' }
+            },
+            minor: {
+                'Imaj7': { roman: 'imaj7', title: 'Tonic minor major 7th' },
+                'IVmaj7': { roman: 'ivmaj7', title: 'Subdominant minor major 7th' },
+                'iim7': { roman: 'iim7b5', title: 'Supertonic half-diminished 7th' },
+                'iiim7': { roman: 'IIImaj7', title: 'Mediant major 7th' },
+                'vim7': { roman: 'VImaj7', title: 'Submediant major 7th' },
+                'V7': { roman: 'V7', title: 'Dominant 7th chord' },
+                'VII7': { roman: 'VII7', title: 'Subtonic dominant 7th' }
+            }
+        };
+        
+        const seventhButtons = document.querySelectorAll('.chord-group[data-group="sevenths"] .roman-chord-btn');
+        const currentSeventhMappings = seventhMappings[this.key.mode];
+        
+        seventhButtons.forEach(button => {
+            // Get the button's current roman numeral or use its original data attribute
+            let currentRoman = button.getAttribute('data-roman');
+            
+            // We need to find the original mapping key for this button
+            // First check if it's already a key in the current mode mappings
+            if (currentSeventhMappings[currentRoman]) {
+                const mapping = currentSeventhMappings[currentRoman];
+                button.setAttribute('data-roman', mapping.roman);
+                button.textContent = mapping.roman;
+                button.setAttribute('title', mapping.title);
+            } else {
+                // Try to find it in the opposite mode's mappings (reverse lookup)
+                const oppositeMappings = seventhMappings[this.key.mode === 'major' ? 'minor' : 'major'];
+                let originalKey = null;
+                
+                // Find which original key produces this current roman numeral
+                for (const [key, mapping] of Object.entries(oppositeMappings)) {
+                    if (mapping.roman === currentRoman) {
+                        originalKey = key;
+                        break;
+                    }
+                }
+                
+                // If we found the original key, apply the current mode's mapping
+                if (originalKey && currentSeventhMappings[originalKey]) {
+                    const mapping = currentSeventhMappings[originalKey];
+                    button.setAttribute('data-roman', mapping.roman);
+                    button.textContent = mapping.roman;
+                    button.setAttribute('title', mapping.title);
+                }
+            }
+        });
+        
+        // Clear any previous selection
+        document.querySelectorAll('.roman-chord-btn').forEach(btn => btn.classList.remove('selected'));
+        
+        console.log(`Roman numeral buttons updated for key: ${this.key.tonic} ${this.key.mode}`);
     }
 
     bindEvents() {
