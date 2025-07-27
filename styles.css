@@ -751,7 +751,51 @@ footer {
     font-size: 0.9rem;
 }
 
-
+/* Tablet responsive adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .piano-keyboard {
+        min-width: 640px;
+        max-width: 640px;
+        overflow-x: auto;
+    }
+    
+    .key.white {
+        width: 45px;
+        height: 90px;
+    }
+    
+    .key.white:nth-child(1) { left: 0; }
+    .key.white:nth-child(2) { left: 45px; }
+    .key.white:nth-child(3) { left: 90px; }
+    .key.white:nth-child(4) { left: 135px; }
+    .key.white:nth-child(5) { left: 180px; }
+    .key.white:nth-child(6) { left: 225px; }
+    .key.white:nth-child(7) { left: 270px; }
+    .key.white:nth-child(8) { left: 315px; }
+    .key.white:nth-child(9) { left: 360px; }
+    .key.white:nth-child(10) { left: 405px; }
+    .key.white:nth-child(11) { left: 450px; }
+    .key.white:nth-child(12) { left: 495px; }
+    .key.white:nth-child(13) { left: 540px; }
+    .key.white:nth-child(14) { left: 585px; }
+    
+    .key.black {
+        width: 28px;
+        height: 55px;
+    }
+    
+    /* Black key positioning for 45px white keys */
+    .key.black[data-note="C#4"] { left: 31px; }
+    .key.black[data-note="D#4"] { left: 76px; }
+    .key.black[data-note="F#4"] { left: 166px; }
+    .key.black[data-note="G#4"] { left: 211px; }
+    .key.black[data-note="A#4"] { left: 256px; }
+    .key.black[data-note="C#5"] { left: 346px; }
+    .key.black[data-note="D#5"] { left: 391px; }
+    .key.black[data-note="F#5"] { left: 481px; }
+    .key.black[data-note="G#5"] { left: 526px; }
+    .key.black[data-note="A#5"] { left: 571px; }
+}
 
 @media (max-width: 768px) {
     body {
@@ -823,7 +867,7 @@ footer {
     }
     
     .piano-keyboard {
-        min-width: 720px;
+        min-width: 560px;
         max-width: none;
         height: 100px;
         margin: 20px 0;
@@ -859,16 +903,17 @@ footer {
         height: 50px;
     }
     
+    /* Black key positioning for 40px white keys */
     .key.black[data-note="C#4"] { left: 28px; }
     .key.black[data-note="D#4"] { left: 68px; }
     .key.black[data-note="F#4"] { left: 148px; }
     .key.black[data-note="G#4"] { left: 188px; }
     .key.black[data-note="A#4"] { left: 228px; }
-    .key.black[data-note="C#5"] { left: 268px; }
-    .key.black[data-note="D#5"] { left: 308px; }
-    .key.black[data-note="F#5"] { left: 388px; }
-    .key.black[data-note="G#5"] { left: 428px; }
-    .key.black[data-note="A#5"] { left: 468px; }
+    .key.black[data-note="C#5"] { left: 308px; }
+    .key.black[data-note="D#5"] { left: 348px; }
+    .key.black[data-note="F#5"] { left: 428px; }
+    .key.black[data-note="G#5"] { left: 468px; }
+    .key.black[data-note="A#5"] { left: 508px; }
     
     .chord-builder button {
         display: block;
