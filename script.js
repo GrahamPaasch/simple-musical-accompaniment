@@ -936,6 +936,7 @@ class MusicalAccompanist {
             chord.isRomanNumeral = true;
         }
         
+        console.log(`parseRomanNumeralChord: ${chordName} -> actualChordName: ${actualChordName} -> chord:`, chord);
         return chord;
     }
 
@@ -1594,7 +1595,9 @@ class MusicalAccompanist {
             rootIndex = (keyIndex + scale[degree]) % 12;
         }
         
-        return this.buildChordFromRoot(rootIndex, chordInfo.quality, romanNumeral);
+        const result = this.buildChordFromRoot(rootIndex, chordInfo.quality, romanNumeral);
+        console.log(`getRomanNumeralChord: ${romanNumeral} -> `, result);
+        return result;
     }
     
     /**
@@ -1717,13 +1720,16 @@ class MusicalAccompanist {
                 break;
         }
         
-        return {
+        const result = {
             name: displayName,
             notes: notes,
             duration: '1n',
             isRomanNumeral: true,
             chordQuality: quality
         };
+        
+        console.log(`buildChordFromRoot: ${displayName} (${quality}) -> `, result);
+        return result;
     }
 
     /**
@@ -2702,7 +2708,10 @@ class MusicalAccompanist {
      * Check if string is a single note
      */
     isSingleNote(str) {
-        return /^[A-G][#b]?\d?$/.test(str);
+        // A single note should have an octave number (like C4, D#5) 
+        // OR be explicitly just a note name with context that it's meant as a single note
+        // Basic chord names like "C", "D", "G" should not be treated as single notes
+        return /^[A-G][#b]?\d+$/.test(str);
     }
 
     /**
