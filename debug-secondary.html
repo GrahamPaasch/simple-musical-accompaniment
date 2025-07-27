@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Secondary Dominants</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .chord-result { font-family: monospace; background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .error { background: #ffebee; border: 1px solid #ffcdd2; }
+    </style>
+</head>
+<body>
+    <h1>Debug Secondary Dominants</h1>
+    
+    <div class="test-section">
+        <h3>Test Direct buildChordFromRoot with 'dominant7'</h3>
+        <div id="direct-test"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test buildSecondaryDominant</h3>
+        <div id="secondary-test"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test Full Roman Numeral Parsing</h3>
+        <div id="parsing-test"></div>
+    </div>
+
+    <script>
+        // Copy the relevant parts of the musical accompanist for debugging
+        class DebugTester {
+            constructor() {
+                this.indexToNote = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+                this.noteToIndex = {
+                    'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,
+                    'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11
+                };
+                this.key = { tonic: 'C', mode: 'major' };
+            }
+
+            buildChordFromRoot(rootIndex, quality, displayName) {
+                console.log(`buildChordFromRoot called with: rootIndex=${rootIndex}, quality='${quality}', displayName='${displayName}'`);
+                
+                const rootNote = this.indexToNote[rootIndex] + '4';
+                let notes = [rootNote];
+                
+                switch (quality) {
+                    case 'major':
+                        notes = [
+                            rootNote,
+                            this.indexToNote[(rootIndex + 4) % 12] + '4',
+                            this.indexToNote[(rootIndex + 7) % 12] + '4'
+                        ];
+                        break;
+                        
+                    case 'minor':
+                        notes = [
+                            rootNote,
+                            this.indexToNote[(rootIndex + 3) % 12] + '4',
+                            this.indexToNote[(rootIndex + 7) % 12] + '4'
+                        ];
+                        break;
+                        
+                    case 'dominant7':
+                        console.log('Matched dominant7 case!');
+                        notes = [
+                            rootNote,
+                            this.indexToNote[(rootIndex + 4) % 12] + '4',
+                            this.indexToNote[(rootIndex + 7) % 12] + '4',
+                            this.indexToNote[(rootIndex + 10) % 12] + '4'
+                        ];
+                        break;
+                        
+                    default:
+                        console.log(`No case matched for quality: '${quality}'`);
+                        notes = [rootNote]; // This would cause single note issue!
+                }
+                
+                const result = {
+                    name: displayName,
+                    notes: notes,
+                    duration: '1n',
+                    isRomanNumeral: true,
+                    chordQuality: quality
+                };
+                
+                console.log('buildChordFromRoot result:', result);
+                return result;
+            }
+
+            buildSecondaryDominant(targetDegree, romanNumeral) {
+                console.log(`buildSecondaryDominant called with: targetDegree=${targetDegree}, romanNumeral='${romanNumeral}'`);
+                
+                const keyIndex = this.noteToIndex[this.key.tonic];
+                const majorScale = [0, 2, 4, 5, 7, 9, 11];
+                const minorScale = [0, 2, 3, 5, 7, 8, 10];
+                const scale = this.key.mode === 'major' ? majorScale : minorScale;
+                
+                // Get the target chord's root
+                const targetRootIndex = (keyIndex + scale[targetDegree]) % 12;
+                console.log(`Target root index: ${targetRootIndex} (${this.indexToNote[targetRootIndex]})`);
+                
+                // Build dominant 7th chord a fifth above the target
+                const dominantRootIndex = (targetRootIndex + 7) % 12;
+                console.log(`Dominant root index: ${dominantRootIndex} (${this.indexToNote[dominantRootIndex]})`);
+                
+                return this.buildChordFromRoot(dominantRootIndex, 'dominant7', romanNumeral);
+            }
+
+            parseRomanNumeralChord(romanNumeral) {
+                console.log(`parseRomanNumeralChord called with: '${romanNumeral}'`);
+                
+                const romanNumeralMap = {
+                    // Secondary dominants
+                    'V7/V': { target: 4, quality: 'secondary-dominant' },
+                    'V7/vi': { target: 5, quality: 'secondary-dominant' },
+                    'V7/IV': { target: 3, quality: 'secondary-dominant' },
+                    'V7/ii': { target: 1, quality: 'secondary-dominant' },
+                    'V7/iii': { target: 2, quality: 'secondary-dominant' }
+                };
+                
+                if (!(romanNumeral in romanNumeralMap)) {
+                    console.log(`Roman numeral '${romanNumeral}' not found in map`);
+                    return null;
+                }
+                
+                const chordInfo = romanNumeralMap[romanNumeral];
+                console.log('Chord info:', chordInfo);
+                
+                // Handle secondary dominants
+                if (chordInfo.quality === 'secondary-dominant') {
+                    console.log('Detected as secondary dominant');
+                    return this.buildSecondaryDominant(chordInfo.target, romanNumeral);
+                }
+                
+                return null;
+            }
+        }
+
+        const tester = new DebugTester();
+
+        // Test 1: Direct buildChordFromRoot
+        document.getElementById('direct-test').innerHTML = '<h4>Testing direct buildChordFromRoot(2, "dominant7", "D7")</h4>';
+        try {
+            const directResult = tester.buildChordFromRoot(2, 'dominant7', 'D7');
+            document.getElementById('direct-test').innerHTML += `
+                <div class="chord-result">
+                    Result: ${JSON.stringify(directResult, null, 2)}
+                </div>
+            `;
+        } catch (e) {
+            document.getElementById('direct-test').innerHTML += `
+                <div class="chord-result error">
+                    Error: ${e.message}
+                </div>
+            `;
+        }
+
+        // Test 2: buildSecondaryDominant
+        document.getElementById('secondary-test').innerHTML = '<h4>Testing buildSecondaryDominant(4, "V7/V")</h4>';
+        try {
+            const secondaryResult = tester.buildSecondaryDominant(4, 'V7/V');
+            document.getElementById('secondary-test').innerHTML += `
+                <div class="chord-result">
+                    Result: ${JSON.stringify(secondaryResult, null, 2)}
+                </div>
+            `;
+        } catch (e) {
+            document.getElementById('secondary-test').innerHTML += `
+                <div class="chord-result error">
+                    Error: ${e.message}
+                </div>
+            `;
+        }
+
+        // Test 3: Full parsing
+        document.getElementById('parsing-test').innerHTML = '<h4>Testing parseRomanNumeralChord("V7/V")</h4>';
+        try {
+            const parsingResult = tester.parseRomanNumeralChord('V7/V');
+            document.getElementById('parsing-test').innerHTML += `
+                <div class="chord-result">
+                    Result: ${JSON.stringify(parsingResult, null, 2)}
+                </div>
+            `;
+        } catch (e) {
+            document.getElementById('parsing-test').innerHTML += `
+                <div class="chord-result error">
+                    Error: ${e.message}
+                </div>
+            `;
+        }
+
+        // Show console logs in the page
+        const originalLog = console.log;
+        const logDiv = document.createElement('div');
+        logDiv.innerHTML = '<h3>Console Logs:</h3>';
+        document.body.appendChild(logDiv);
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logEntry = document.createElement('div');
+            logEntry.style.fontFamily = 'monospace';
+            logEntry.style.fontSize = '12px';
+            logEntry.style.margin = '2px 0';
+            logEntry.style.padding = '2px 5px';
+            logEntry.style.backgroundColor = '#f8f9fa';
+            logEntry.textContent = args.join(' ');
+            logDiv.appendChild(logEntry);
+        };
+    </script>
+</body>
+</html>

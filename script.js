@@ -1636,6 +1636,8 @@ class MusicalAccompanist {
             case 'minor':
                 notes = [
                     rootNote,
+                    getNoteWithOctave(3),  // Minor third
+                    rootNote,
                     this.indexToNote[(rootIndex + 3) % 12] + '4',
                     this.indexToNote[(rootIndex + 7) % 12] + '4'
                 ];
