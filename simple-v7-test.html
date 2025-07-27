@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple V7 Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-info { font-family: monospace; background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px; }
+        .error { background: #ffebee; border: 1px solid #ffcdd2; }
+        .success { background: #e8f5e8; border: 1px solid #4caf50; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+    <h1>Simple V7 Test</h1>
+    <button onclick="testV7Simple()">Test V7 Simple</button>
+    <div id="results"></div>
+
+    <script>
+        // Copy just the chord building logic without the full constructor
+        class SimpleChordTester {
+            constructor() {
+                this.indexToNote = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+                this.noteToIndex = {
+                    'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,
+                    'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11
+                };
+                this.key = { tonic: 'C', mode: 'major' };
+            }
+
+            buildChordFromRoot(rootIndex, quality, displayName) {
+                console.log(`buildChordFromRoot called: rootIndex=${rootIndex}, quality='${quality}', displayName='${displayName}'`);
+                
+                const rootNote = this.indexToNote[rootIndex] + '4';
+                let notes = [rootNote];
+                
+                console.log(`Initial notes: [${notes.join(', ')}]`);
+                console.log(`Testing quality match for '${quality}'`);
+                
+                switch (quality) {
+                    case 'major':
+                        console.log('Matched major case');
+                        notes = [
+                            rootNote,
+                            this.indexToNote[(rootIndex + 4) % 12] + '4',
+                            this.indexToNote[(rootIndex + 7) % 12] + '4'
+                        ];
+                        break;
+                        
+                    case 'minor':
+                        console.log('Matched minor case');
+                        notes = [
+                            rootNote,
+                            this.indexToNote[(rootIndex + 3) % 12] + '4',
+                            this.indexToNote[(rootIndex + 7) % 12] + '4'
+                        ];
+                        break;
+                        
+                    case 'dominant7':
+                        console.log('Matched dominant7 case!');
+                        notes = [
+                            rootNote,
+                            this.indexToNote[(rootIndex + 4) % 12] + '4',
+                            this.indexToNote[(rootIndex + 7) % 12] + '4',
+                            this.indexToNote[(rootIndex + 10) % 12] + '4'
+                        ];
+                        break;
+                        
+                    default:
+                        console.log(`No case matched for quality: '${quality}' - this is the problem!`);
+                        // This would leave notes as just [rootNote]
+                }
+                
+                console.log(`Final notes: [${notes.join(', ')}]`);
+                
+                // Add safety check
+                if (notes.length === 1) {
+                    console.warn(`WARNING: Only single note for quality '${quality}' - switch case didn't match!`);
+                }
+                
+                const result = {
+                    name: displayName,
+                    notes: notes,
+                    duration: '1n',
+                    isRomanNumeral: true,
+                    chordQuality: quality
+                };
+                
+                return result;
+            }
+
+            // Simulate the V7 lookup from the romanNumeralMap
+            testV7Lookup() {
+                console.log('=== Testing V7 lookup simulation ===');
+                
+                // This simulates what happens in getRomanNumeralChord for V7
+                const romanNumeralMap = {
+                    'V7': { degree: 4, quality: 'dominant7' }
+                };
+                
+                const chordInfo = romanNumeralMap['V7'];
+                console.log('V7 chord info from map:', chordInfo);
+                
+                // Calculate root index for V7 in C major
+                const keyIndex = this.noteToIndex[this.key.tonic]; // 0 for C
+                const majorScale = [0, 2, 4, 5, 7, 9, 11];
+                const degree = chordInfo.degree; // 4
+                const rootIndex = (keyIndex + majorScale[degree]) % 12; // (0 + 7) % 12 = 7 (G)
+                
+                console.log(`Key: ${this.key.tonic} (index ${keyIndex})`);
+                console.log(`Degree: ${degree} (V)`);
+                console.log(`Root index: ${rootIndex} (${this.indexToNote[rootIndex]})`);
+                console.log(`Quality: ${chordInfo.quality}`);
+                
+                return this.buildChordFromRoot(rootIndex, chordInfo.quality, 'V7');
+            }
+        }
+
+        function testV7Simple() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>Testing V7...</h3>';
+            
+            try {
+                const tester = new SimpleChordTester();
+                
+                // Test 1: Direct test with known parameters
+                console.log('=== Test 1: Direct buildChordFromRoot ===');
+                const directResult = tester.buildChordFromRoot(7, 'dominant7', 'DirectV7');
+                
+                resultsDiv.innerHTML += `
+                    <div class="debug-info ${directResult.notes.length > 1 ? 'success' : 'error'}">
+                        <strong>Test 1 - Direct buildChordFromRoot(7, 'dominant7', 'DirectV7'):</strong><br>
+                        Result: ${JSON.stringify(directResult, null, 2)}<br>
+                        Note count: ${directResult.notes.length}<br>
+                        Expected: 4 notes (G4, B4, D5, F5)
+                    </div>
+                `;
+                
+                // Test 2: Simulate full V7 lookup
+                console.log('=== Test 2: Full V7 lookup simulation ===');
+                const lookupResult = tester.testV7Lookup();
+                
+                resultsDiv.innerHTML += `
+                    <div class="debug-info ${lookupResult.notes.length > 1 ? 'success' : 'error'}">
+                        <strong>Test 2 - Full V7 lookup simulation:</strong><br>
+                        Result: ${JSON.stringify(lookupResult, null, 2)}<br>
+                        Note count: ${lookupResult.notes.length}
+                    </div>
+                `;
+                
+                // Test 3: String comparison test
+                console.log('=== Test 3: String comparison ===');
+                const testString = 'dominant7';
+                const comparison1 = testString === 'dominant7';
+                const comparison2 = 'dominant7' === 'dominant7';
+                
+                resultsDiv.innerHTML += `
+                    <div class="debug-info">
+                        <strong>Test 3 - String comparison:</strong><br>
+                        testString === 'dominant7': ${comparison1}<br>
+                        'dominant7' === 'dominant7': ${comparison2}<br>
+                        testString length: ${testString.length}<br>
+                        testString charCodes: [${Array.from(testString).map(c => c.charCodeAt(0)).join(', ')}]
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Test error:', error);
+                resultsDiv.innerHTML += `
+                    <div class="debug-info error">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug V7 Issue</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log-entry { font-family: monospace; background: #f5f5f5; padding: 5px; margin: 2px 0; border-radius: 3px; }
+        .error { background: #ffebee; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+    <h1>Debug V7 Issue</h1>
+    <button onclick="testV7()">Test V7</button>
+    <div id="results"></div>
+    <div id="console-logs"></div>
+
+    <script src="script.js"></script>
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const logsDiv = document.getElementById('console-logs');
+        
+        // Capture console output
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = args.join(' ');
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        };
+
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry error';
+            logEntry.textContent = 'ERROR: ' + args.join(' ');
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        };
+
+        function testV7() {
+            try {
+                console.log('=== Testing V7 ===');
+                const accompanist = new MusicalAccompanist();
+                console.log('MusicalAccompanist created');
+                
+                // Test the full flow
+                console.log('Testing getRomanNumeralChord("V7")');
+                const chord = accompanist.getRomanNumeralChord('V7');
+                console.log('Result:', chord);
+                
+                resultsDiv.innerHTML = `
+                    <h3>V7 Test Result:</h3>
+                    <pre>${JSON.stringify(chord, null, 2)}</pre>
+                `;
+                
+                // Also test direct buildChordFromRoot
+                console.log('Testing direct buildChordFromRoot(7, "dominant7", "V7")');
+                const directChord = accompanist.buildChordFromRoot(7, 'dominant7', 'V7');
+                console.log('Direct result:', directChord);
+                
+            } catch (error) {
+                console.error('Test failed:', error);
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

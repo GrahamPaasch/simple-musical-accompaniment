@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Audio Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-info { font-family: monospace; background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px; }
+        .error { background: #ffebee; border: 1px solid #ffcdd2; }
+        .success { background: #e8f5e8; border: 1px solid #4caf50; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+    <h1>Debug Audio Flow for V7</h1>
+    <button onclick="testAudioFlow()">Test V7 Audio Flow</button>
+    <div id="results"></div>
+
+    <script src="script.js"></script>
+    <script>
+        async function testAudioFlow() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>Testing V7 Audio Flow...</h3>';
+            
+            try {
+                const accompanist = new MusicalAccompanist();
+                
+                // Test step by step
+                console.log('=== Step 1: Get V7 chord ===');
+                const chord = accompanist.getRomanNumeralChord('V7');
+                console.log('V7 chord:', chord);
+                
+                resultsDiv.innerHTML += `
+                    <div class="debug-info ${chord && chord.notes && chord.notes.length > 1 ? 'success' : 'error'}">
+                        <strong>Step 1 - Get V7 chord:</strong><br>
+                        Chord: ${JSON.stringify(chord, null, 2)}<br>
+                        Notes: ${chord ? chord.notes : 'null'}<br>
+                        Note count: ${chord && chord.notes ? chord.notes.length : 0}
+                    </div>
+                `;
+                
+                if (chord && chord.notes && chord.notes.length > 0) {
+                    console.log('=== Step 2: Get frequencies ===');
+                    const frequencies = accompanist.getChordFrequencies(chord);
+                    console.log('Frequencies:', frequencies);
+                    
+                    resultsDiv.innerHTML += `
+                        <div class="debug-info ${frequencies.length > 1 ? 'success' : 'error'}">
+                            <strong>Step 2 - Get frequencies:</strong><br>
+                            Frequencies: [${frequencies.join(', ')}]<br>
+                            Frequency count: ${frequencies.length}
+                        </div>
+                    `;
+                    
+                    console.log('=== Step 3: Test individual note conversion ===');
+                    chord.notes.forEach((note, index) => {
+                        try {
+                            const freq = Tone.Frequency(note).toFrequency();
+                            console.log(`Note ${note} -> ${freq} Hz`);
+                            resultsDiv.innerHTML += `
+                                <div class="debug-info success">
+                                    Note ${index + 1}: ${note} -> ${freq.toFixed(2)} Hz
+                                </div>
+                            `;
+                        } catch (error) {
+                            console.error(`Error converting ${note}:`, error);
+                            resultsDiv.innerHTML += `
+                                <div class="debug-info error">
+                                    Error converting ${note}: ${error.message}
+                                </div>
+                            `;
+                        }
+                    });
+                }
+                
+                // Test direct buildChordFromRoot
+                console.log('=== Step 4: Test direct buildChordFromRoot ===');
+                const directChord = accompanist.buildChordFromRoot(7, 'dominant7', 'DirectV7');
+                console.log('Direct V7:', directChord);
+                
+                resultsDiv.innerHTML += `
+                    <div class="debug-info ${directChord && directChord.notes && directChord.notes.length > 1 ? 'success' : 'error'}">
+                        <strong>Step 4 - Direct buildChordFromRoot:</strong><br>
+                        Result: ${JSON.stringify(directChord, null, 2)}<br>
+                        Note count: ${directChord && directChord.notes ? directChord.notes.length : 0}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Test error:', error);
+                resultsDiv.innerHTML += `
+                    <div class="debug-info error">
+                        <strong>Test Error:</strong><br>
+                        ${error.message}<br>
+                        ${error.stack}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

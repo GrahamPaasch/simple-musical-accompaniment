@@ -1229,13 +1229,18 @@ class MusicalAccompanist {
             // Get frequencies for the chord
             const frequencies = this.getChordFrequencies(chord);
             
-            // Play the chord briefly
-            this.synth.releaseAll();
-            frequencies.forEach(freq => {
-                this.synth.triggerAttackRelease(freq, '2n');
-            });
+            console.log(`Previewing chord: ${chord.name} with ${frequencies.length} notes`);
+            console.log(`Frequencies: [${frequencies.join(', ')}]`);
             
-            this.showStatus(`Previewing: ${chord.name}`);
+            // Play the chord - use triggerAttackRelease with array for proper chord playback
+            this.synth.releaseAll();
+            
+            if (frequencies.length > 0) {
+                // Trigger all notes simultaneously as a chord
+                this.synth.triggerAttackRelease(frequencies, '2n');
+            }
+            
+            this.showStatus(`Previewing: ${chord.name} (${frequencies.length} notes)`);
         } catch (error) {
             console.error('Error previewing chord:', error);
             this.showStatus('Error previewing chord');
@@ -1388,15 +1393,19 @@ class MusicalAccompanist {
         
         // Play new chord
         if (chord.isDrone) {
-            // For drone chords, sustain the notes
-            frequencies.forEach(freq => {
-                this.synth.triggerAttack(freq);
-            });
+            // For drone chords, sustain the notes - trigger all simultaneously
+            if (frequencies.length > 1) {
+                this.synth.triggerAttack(frequencies);
+            } else if (frequencies.length === 1) {
+                this.synth.triggerAttack(frequencies[0]);
+            }
         } else {
-            // For regular chords, play with envelope
-            frequencies.forEach(freq => {
-                this.synth.triggerAttackRelease(freq, '2n');
-            });
+            // For regular chords, play with envelope - trigger all simultaneously
+            if (frequencies.length > 1) {
+                this.synth.triggerAttackRelease(frequencies, '2n');
+            } else if (frequencies.length === 1) {
+                this.synth.triggerAttackRelease(frequencies[0], '2n');
+            }
         }
     }
 
@@ -1719,6 +1728,12 @@ class MusicalAccompanist {
                     this.indexToNote[(rootIndex + 9) % 12] + '4'
                 ];
                 break;
+        }
+        
+        // Add safety check for single note issue
+        if (notes.length === 1) {
+            console.warn(`buildChordFromRoot: Only single note for quality '${quality}' - this indicates a problem!`);
+            console.warn(`Available qualities should include: major, minor, diminished, augmented, sus4, sus2, major7, minor7, dominant7, half-diminished7, fully-diminished7`);
         }
         
         const result = {

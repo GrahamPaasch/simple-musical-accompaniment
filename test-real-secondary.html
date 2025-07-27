@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Real Secondary Dominants</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .chord-display { font-family: monospace; background: #f5f5f5; padding: 10px; margin: 5px 0; }
+        .error { background: #ffebee; border: 1px solid #ffcdd2; }
+        .success { background: #e8f5e8; border: 1px solid #4caf50; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+    <h1>Test Real Secondary Dominants</h1>
+    <div id="test-results"></div>
+    <div id="console-output"><h3>Debug Output:</h3></div>
+
+    <script src="script.js"></script>
+    <script>
+        // Capture console output
+        const consoleDiv = document.getElementById('console-output');
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logEntry = document.createElement('div');
+            logEntry.style.fontFamily = 'monospace';
+            logEntry.style.fontSize = '12px';
+            logEntry.style.backgroundColor = '#f8f9fa';
+            logEntry.style.padding = '2px 5px';
+            logEntry.style.margin = '1px 0';
+            logEntry.textContent = args.join(' ');
+            consoleDiv.appendChild(logEntry);
+        };
+
+        // Test secondary dominants with the real MusicalAccompanist class
+        async function testSecondaryDominants() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                // Create instance
+                const accompanist = new MusicalAccompanist();
+                
+                // Test each secondary dominant
+                const secondaryDominants = ['V7/V', 'V7/vi', 'V7/IV', 'V7/ii', 'V7/iii'];
+                
+                for (const roman of secondaryDominants) {
+                    console.log(`\n=== Testing ${roman} ===`);
+                    
+                    try {
+                        const chord = accompanist.parseRomanNumeralChord(roman);
+                        
+                        const resultDiv = document.createElement('div');
+                        resultDiv.className = 'test-result';
+                        
+                        if (chord && chord.notes && chord.notes.length > 1) {
+                            resultDiv.className += ' success';
+                            resultDiv.innerHTML = `
+                                <strong>${roman}</strong> - SUCCESS<br>
+                                <div class="chord-display">
+                                    Name: ${chord.name}<br>
+                                    Notes: ${chord.notes.join(', ')}<br>
+                                    Note Count: ${chord.notes.length}<br>
+                                    Quality: ${chord.chordQuality || 'unknown'}
+                                </div>
+                            `;
+                        } else {
+                            resultDiv.className += ' error';
+                            resultDiv.innerHTML = `
+                                <strong>${roman}</strong> - FAILED<br>
+                                <div class="chord-display">
+                                    Result: ${chord ? JSON.stringify(chord, null, 2) : 'null'}<br>
+                                    ${chord && chord.notes ? `Note Count: ${chord.notes.length}` : 'No notes found'}
+                                </div>
+                            `;
+                        }
+                        
+                        resultsDiv.appendChild(resultDiv);
+                        
+                    } catch (error) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'test-result error';
+                        errorDiv.innerHTML = `
+                            <strong>${roman}</strong> - ERROR<br>
+                            <div class="chord-display">
+                                Error: ${error.message}<br>
+                                Stack: ${error.stack}
+                            </div>
+                        `;
+                        resultsDiv.appendChild(errorDiv);
+                    }
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-result error">
+                        <strong>Setup Error</strong><br>
+                        <div class="chord-display">
+                            Error: ${error.message}<br>
+                            Stack: ${error.stack}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', testSecondaryDominants);
+    </script>
+</body>
+</html>
