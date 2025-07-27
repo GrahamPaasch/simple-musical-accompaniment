@@ -433,8 +433,7 @@ class MusicalAccompanist {
                 'iim7': { roman: 'iim7', title: 'Supertonic minor 7th' },
                 'iiim7': { roman: 'iiim7', title: 'Mediant minor 7th' },
                 'vim7': { roman: 'vim7', title: 'Submediant minor 7th' },
-                'V7': { roman: 'V7', title: 'Dominant 7th chord' },
-                'VII7': { roman: 'VII7', title: 'Leading tone 7th' }
+                'V7': { roman: 'V7', title: 'Dominant 7th chord' }
             },
             minor: {
                 'Imaj7': { roman: 'imaj7', title: 'Tonic minor major 7th' },
@@ -442,8 +441,7 @@ class MusicalAccompanist {
                 'iim7': { roman: 'iim7b5', title: 'Supertonic half-diminished 7th' },
                 'iiim7': { roman: 'IIImaj7', title: 'Mediant major 7th' },
                 'vim7': { roman: 'VImaj7', title: 'Submediant major 7th' },
-                'V7': { roman: 'V7', title: 'Dominant 7th chord' },
-                'VII7': { roman: 'VII7', title: 'Subtonic dominant 7th' }
+                'V7': { roman: 'V7', title: 'Dominant 7th chord' }
             }
         };
         

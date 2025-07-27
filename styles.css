@@ -506,12 +506,14 @@ section h2 {
     position: relative;
     height: 120px;
     max-width: 720px;
-    min-width: 720px;
+    min-width: 320px; /* Changed from 720px to allow mobile flexibility */
+    width: 100%; /* Add responsive width */
     margin: 20px auto;
     background: #333;
     border-radius: 5px;
     padding: 10px;
     overflow-x: auto;
+    box-sizing: border-box; /* Ensure padding is included in width */
 }
 
 .piano-keys {
@@ -754,7 +756,7 @@ footer {
 /* Tablet responsive adjustments */
 @media (max-width: 1024px) and (min-width: 769px) {
     .piano-keyboard {
-        min-width: 640px;
+        min-width: 520px; /* Reduced for better tablet fit */
         max-width: 640px;
         overflow-x: auto;
     }
@@ -867,15 +869,15 @@ footer {
     }
     
     .piano-keyboard {
-        min-width: 560px;
+        min-width: 490px; /* Better fit for mobile, 14 * 35px */
         max-width: none;
-        height: 100px;
+        height: 90px; /* Slightly taller for easier touch */
         margin: 20px 0;
     }
     
     .piano-section {
         overflow-x: auto;
-        padding: 15px 10px;
+        padding: 15px 5px; /* Reduced padding for mobile */
     }
     
     .key.white {
@@ -1039,12 +1041,13 @@ footer {
     }
     
     .piano-keyboard {
-        height: 80px;
+        height: 90px; /* Better for touch */
+        min-width: 490px; /* 14 * 35px for proper spacing */
     }
     
     .key.white {
         width: 35px;
-        height: 70px;
+        height: 75px; /* Slightly taller for easier touch */
     }
     
     .key.white:nth-child(1) { left: 0; }
@@ -1063,20 +1066,20 @@ footer {
     .key.white:nth-child(14) { left: 455px; }
     
     .key.black {
-        width: 20px;
-        height: 40px;
+        width: 22px; /* Slightly wider for better touch */
+        height: 45px; /* Slightly taller for better touch */
     }
     
-    .key.black[data-note="C#4"] { left: 28px; }
-    .key.black[data-note="D#4"] { left: 68px; }
-    .key.black[data-note="F#4"] { left: 148px; }
-    .key.black[data-note="G#4"] { left: 188px; }
-    .key.black[data-note="A#4"] { left: 228px; }
-    .key.black[data-note="C#5"] { left: 268px; }
-    .key.black[data-note="D#5"] { left: 308px; }
-    .key.black[data-note="F#5"] { left: 388px; }
-    .key.black[data-note="G#5"] { left: 428px; }
-    .key.black[data-note="A#5"] { left: 468px; }
+    .key.black[data-note="C#4"] { left: 26px; }
+    .key.black[data-note="D#4"] { left: 66px; }
+    .key.black[data-note="F#4"] { left: 146px; }
+    .key.black[data-note="G#4"] { left: 186px; }
+    .key.black[data-note="A#4"] { left: 226px; }
+    .key.black[data-note="C#5"] { left: 266px; }
+    .key.black[data-note="D#5"] { left: 306px; }
+    .key.black[data-note="F#5"] { left: 386px; }
+    .key.black[data-note="G#5"] { left: 426px; }
+    .key.black[data-note="A#5"] { left: 466px; }
     
     .chord-builder button {
         display: block;
