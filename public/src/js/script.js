@@ -65,7 +65,8 @@ class MusicalAccompanist {
         
         // Initialize with empty progression
         this.displayChords();
-        
+        this.updateKeyboardForKey();
+
         // Initialize Roman numeral buttons (with slight delay to ensure DOM is ready)
         setTimeout(() => {
             this.updateRomanNumeralButtons();
@@ -192,13 +193,15 @@ class MusicalAccompanist {
                 this.key.tonic = e.target.value;
                 this.updateRomanNumeralButtons();
                 this.displayChords();
+                this.updateKeyboardForKey();
                 this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
             });
-            
+
             modeSelect.addEventListener('change', (e) => {
                 this.key.mode = e.target.value;
                 this.updateRomanNumeralButtons();
                 this.displayChords();
+                this.updateKeyboardForKey();
                 this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
             });
         }
@@ -1908,6 +1911,26 @@ class MusicalAccompanist {
             noteElement.className = 'selected-note';
             noteElement.textContent = note;
             display.appendChild(noteElement);
+        });
+    }
+
+    /**
+     * Highlight scale notes on the piano keyboard for the current key
+     */
+    updateKeyboardForKey() {
+        const majorScale = [0, 2, 4, 5, 7, 9, 11];
+        const minorScale = [0, 2, 3, 5, 7, 8, 10];
+        const keyIndex = this.noteToIndex[this.key.tonic];
+        const scale = this.key.mode === 'major' ? majorScale : minorScale;
+        const scaleNotes = scale.map(i => this.indexToNote[(keyIndex + i) % 12]);
+
+        document.querySelectorAll('.key').forEach(key => {
+            const base = key.dataset.note.replace(/[0-9]/g, '');
+            if (scaleNotes.includes(base)) {
+                key.classList.add('in-key');
+            } else {
+                key.classList.remove('in-key');
+            }
         });
     }
 
