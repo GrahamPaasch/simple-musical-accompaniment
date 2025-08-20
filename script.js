@@ -4,6 +4,50 @@
  * Uses Tone.js for audio synthesis and Web Audio API for precise timing
  */
 
+// Mapping of which keys use sharps vs flats for spelling
+const KEY_SIGNATURES = {
+    major: {
+        'C': 'sharp',
+        'C#': 'sharp',
+        'D': 'sharp',
+        'D#': 'flat',
+        'E': 'sharp',
+        'F': 'flat',
+        'F#': 'sharp',
+        'G': 'sharp',
+        'G#': 'flat',
+        'A': 'sharp',
+        'A#': 'flat',
+        'B': 'sharp'
+    },
+    minor: {
+        'C': 'flat',
+        'C#': 'sharp',
+        'D': 'flat',
+        'D#': 'flat',
+        'E': 'sharp',
+        'F': 'flat',
+        'F#': 'sharp',
+        'G': 'flat',
+        'G#': 'sharp',
+        'A': 'sharp',
+        'A#': 'flat',
+        'B': 'sharp'
+    }
+};
+
+// Pitch class spellings for sharp and flat signatures
+const PITCH_CLASS_NAMES = {
+    sharp: {
+        'C': 'C', 'C#': 'C#', 'D': 'D', 'D#': 'D#', 'E': 'E', 'F': 'F',
+        'F#': 'F#', 'G': 'G', 'G#': 'G#', 'A': 'A', 'A#': 'A#', 'B': 'B'
+    },
+    flat: {
+        'C': 'C', 'C#': 'Db', 'D': 'D', 'D#': 'Eb', 'E': 'E', 'F': 'F',
+        'F#': 'Gb', 'G': 'G', 'G#': 'Ab', 'A': 'A', 'A#': 'Bb', 'B': 'B'
+    }
+};
+
 class MusicalAccompanist {
     constructor() {
         this.isPlaying = false;
@@ -192,13 +236,15 @@ class MusicalAccompanist {
                 this.key.tonic = e.target.value;
                 this.updateRomanNumeralButtons();
                 this.displayChords();
+                this.updateKeyboardForKey();
                 this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
             });
-            
+
             modeSelect.addEventListener('change', (e) => {
                 this.key.mode = e.target.value;
                 this.updateRomanNumeralButtons();
                 this.displayChords();
+                this.updateKeyboardForKey();
                 this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
             });
         }
@@ -2031,6 +2077,18 @@ class MusicalAccompanist {
     volumeToDb(volume) {
         if (volume <= 0) return -Infinity;
         return 20 * Math.log10(volume);
+    }
+
+    /**
+     * Update piano keyboard note labels based on current key signature
+     */
+    updateKeyboardForKey() {
+        const signatureType = (KEY_SIGNATURES[this.key.mode] && KEY_SIGNATURES[this.key.mode][this.key.tonic]) || 'sharp';
+        const mapping = PITCH_CLASS_NAMES[signatureType];
+        document.querySelectorAll('.key').forEach(keyEl => {
+            const pitchClass = keyEl.dataset.note.replace(/[0-9]/g, '');
+            keyEl.textContent = mapping[pitchClass] || pitchClass;
+        });
     }
 
     /**
