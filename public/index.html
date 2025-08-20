@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Accompanist Tool</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Musical Accompanist Tool</h1>
+            <p>Practice with customizable chord progressions and drones</p>
+        </header>
+
+        <main>
+            <!-- Control Panel -->
+            <section class="control-panel">
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label for="tempo">Tempo (BPM):</label>
+                        <input type="range" id="tempo" min="40" max="200" value="120">
+                        <span id="tempo-display">120</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="volume">Volume:</label>
+                        <input type="range" id="volume" min="0" max="100" value="50">
+                        <span id="volume-display">50%</span>
+                    </div>
+                    
+
+                    
+                    <div class="control-group">
+                        <label for="time-signature">Time Signature:</label>
+                        <select id="time-signature">
+                            <option value="2">2/4</option>
+                            <option value="3">3/4</option>
+                            <option value="4" selected>4/4</option>
+                            <option value="6">6/8</option>
+                            <option value="8">8/8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="loop" checked> Loop Mode
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label><input type="checkbox" id="metronome-toggle" checked> Metronome Click</label>
+                    </div>
+                    <div class="control-group">
+                        <label>Key Signature:</label>
+                        <select id="key-tonic">
+                            <option value="C">C</option>
+                            <option value="C#">C♯/D♭</option>
+                            <option value="D">D</option>
+                            <option value="D#">D♯/E♭</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                            <option value="F#">F♯/G♭</option>
+                            <option value="G">G</option>
+                            <option value="G#">G♯/A♭</option>
+                            <option value="A">A</option>
+                            <option value="A#">A♯/B♭</option>
+                            <option value="B">B</option>
+                        </select>
+                        <select id="key-mode">
+                            <option value="major" selected>Major</option>
+                            <option value="minor">Minor</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Roman Numeral Chord Selection -->
+            <section class="roman-numeral-section">
+                <h2>🎼 Roman Numeral Chords</h2>
+                <div class="roman-numeral-controls">
+                    <!-- Chord Type Tabs -->
+                    <div class="chord-type-tabs">
+                        <button class="chord-tab active" data-type="triads">Triads</button>
+                        <button class="chord-tab" data-type="sevenths">7th Chords</button>
+                        <button class="chord-tab" data-type="secondary">Secondary</button>
+                        <button class="chord-tab" data-type="advanced">Advanced</button>
+                    </div>
+
+                    <!-- Triads Tab -->
+                    <div class="chord-group active" data-group="triads">
+                        <div class="chord-category">
+                            <span class="category-label">Basic Triads</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="I" title="Tonic major triad">I</button>
+                                <button class="roman-chord-btn" data-roman="ii" title="Supertonic minor triad">ii</button>
+                                <button class="roman-chord-btn" data-roman="iii" title="Mediant minor triad">iii</button>
+                                <button class="roman-chord-btn" data-roman="IV" title="Subdominant major triad">IV</button>
+                                <button class="roman-chord-btn" data-roman="V" title="Dominant major triad">V</button>
+                                <button class="roman-chord-btn" data-roman="vi" title="Submediant minor triad">vi</button>
+                                <button class="roman-chord-btn" data-roman="vii°" title="Leading tone diminished triad">vii°</button>
+                            </div>
+                        </div>
+                        <div class="chord-category">
+                            <span class="category-label">Suspended</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="Isus4" title="Tonic suspended 4th">Isus4</button>
+                                <button class="roman-chord-btn" data-roman="Vsus4" title="Dominant suspended 4th">Vsus4</button>
+                                <button class="roman-chord-btn" data-roman="IVsus2" title="Subdominant suspended 2nd">IVsus2</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 7th Chords Tab -->
+                    <div class="chord-group" data-group="sevenths">
+                        <div class="chord-category">
+                            <span class="category-label">Major 7th Chords</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="Imaj7" title="Tonic major 7th">Imaj7</button>
+                                <button class="roman-chord-btn" data-roman="IVmaj7" title="Subdominant major 7th">IVmaj7</button>
+                            </div>
+                        </div>
+                        <div class="chord-category">
+                            <span class="category-label">Minor 7th Chords</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="iim7" title="Supertonic minor 7th">iim7</button>
+                                <button class="roman-chord-btn" data-roman="iiim7" title="Mediant minor 7th">iiim7</button>
+                                <button class="roman-chord-btn" data-roman="vim7" title="Submediant minor 7th">vim7</button>
+                            </div>
+                        </div>
+                        <div class="chord-category">
+                            <span class="category-label">Dominant 7th</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="V7" title="Dominant 7th chord">V7</button>
+                            </div>
+                        </div>
+                        <div class="chord-category">
+                            <span class="category-label">Half-Diminished</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="viim7b5" title="Leading tone half-diminished">viim7b5</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Dominants Tab -->
+                    <div class="chord-group" data-group="secondary">
+                        <div class="chord-category">
+                            <span class="category-label">Secondary Dominants</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="V7/V" title="Dominant of the dominant">V7/V</button>
+                                <button class="roman-chord-btn" data-roman="V7/vi" title="Dominant of vi">V7/vi</button>
+                                <button class="roman-chord-btn" data-roman="V7/IV" title="Dominant of IV">V7/IV</button>
+                                <button class="roman-chord-btn" data-roman="V7/ii" title="Dominant of ii">V7/ii</button>
+                                <button class="roman-chord-btn" data-roman="V7/iii" title="Dominant of iii">V7/iii</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Chords Tab -->
+                    <div class="chord-group" data-group="advanced">
+                        <div class="chord-category">
+                            <span class="category-label">Fully Diminished</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="viio7" title="Leading tone fully diminished 7th">viio7</button>
+                                <button class="roman-chord-btn" data-roman="iio7" title="Supertonic fully diminished 7th">iio7</button>
+                            </div>
+                        </div>
+                        <div class="chord-category">
+                            <span class="category-label">Augmented</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="III+" title="Mediant augmented triad">III+</button>
+                                <button class="roman-chord-btn" data-roman="V+" title="Dominant augmented triad">V+</button>
+                            </div>
+                        </div>
+                        <div class="chord-category">
+                            <span class="category-label">Borrowed Chords</span>
+                            <div class="roman-numeral-buttons">
+                                <button class="roman-chord-btn" data-roman="bVII" title="Flat VII (borrowed from minor)">♭VII</button>
+                                <button class="roman-chord-btn" data-roman="bVI" title="Flat VI (borrowed from minor)">♭VI</button>
+                                <button class="roman-chord-btn" data-roman="bII" title="Neapolitan chord">♭II</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="roman-chord-info">
+                        <span id="roman-chord-display">Select a chord to see its notes</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Piano Keyboard -->
+            <section class="piano-section">
+                <h2>🎹 Piano Keyboard - Click to Build Chords</h2>
+                <div id="piano-keyboard" class="piano-keyboard">
+                    <div class="piano-keys">
+                        <!-- White keys -->
+                        <div class="key white" data-note="C4">C</div>
+                        <div class="key white" data-note="D4">D</div>
+                        <div class="key white" data-note="E4">E</div>
+                        <div class="key white" data-note="F4">F</div>
+                        <div class="key white" data-note="G4">G</div>
+                        <div class="key white" data-note="A4">A</div>
+                        <div class="key white" data-note="B4">B</div>
+                        <div class="key white" data-note="C5">C</div>
+                        <div class="key white" data-note="D5">D</div>
+                        <div class="key white" data-note="E5">E</div>
+                        <div class="key white" data-note="F5">F</div>
+                        <div class="key white" data-note="G5">G</div>
+                        <div class="key white" data-note="A5">A</div>
+                        <div class="key white" data-note="B5">B</div>
+
+                        <!-- Black keys -->
+                        <div class="key black" data-note="C#4">C#</div>
+                        <div class="key black" data-note="D#4">D#</div>
+                        <div class="key black" data-note="F#4">F#</div>
+                        <div class="key black" data-note="G#4">G#</div>
+                        <div class="key black" data-note="A#4">A#</div>
+                        <div class="key black" data-note="C#5">C#</div>
+                        <div class="key black" data-note="D#5">D#</div>
+                        <div class="key black" data-note="F#5">F#</div>
+                        <div class="key black" data-note="G#5">G#</div>
+                        <div class="key black" data-note="A#5">A#</div>
+                    </div>
+                </div>
+                <div class="piano-controls">
+                    <div class="chord-builder">
+                        <label>Selected Notes:</label>
+                        <div id="selected-notes" class="selected-notes"></div>
+                        <div id="selected-slot-display" class="selected-slot-display" style="display: none;">
+                            <div class="slot-selection-info">
+                                <span id="slot-info-text">No slot selected</span>
+                                <div class="slot-navigation">
+                                    <button id="prev-empty-slot" title="Select previous empty slot">⬅️</button>
+                                    <button id="next-empty-slot" title="Select next empty slot">➡️</button>
+                                    <input type="number" id="goto-measure" min="1" placeholder="M" title="Go to measure">
+                                    <input type="number" id="goto-beat" min="1" max="8" placeholder="B" title="Go to beat">
+                                    <button id="goto-slot" title="Go to specific measure/beat">Go</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="piano-action-buttons">
+                            <button id="play-selected">Play Selected</button>
+                            <button id="clear-selection">Clear Notes</button>
+                            <button id="add-to-progression">Add to Slot</button>
+                            <button id="clear-slot-selection" title="Clear slot selection">❌ Clear Slot</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chord Display -->
+            <section class="chord-display-section">
+                <div class="chord-display-header">
+                    <h2>Current Progression</h2>
+                    <div class="progression-controls">
+                        <div class="progression-actions">
+                            <div class="measure-setup">
+                                <input type="number" id="measure-count" min="1" max="500" value="4" title="Number of measures (1-500)">
+                                <button id="create-measures" class="action-btn" title="Create empty measures">📐</button>
+                            </div>
+                            <button id="transpose-down" class="action-btn" title="Transpose down">♭</button>
+                            <button id="transpose-up" class="action-btn" title="Transpose up">♯</button>
+                            <button id="export-progression" class="action-btn" title="Export progression">💾</button>
+                            <button id="import-progression" class="action-btn" title="Import progression">📁</button>
+                            <button id="clear-progression" class="clear-progression-btn">🗑️ Clear</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="chord-display" class="chord-display">
+                    <div class="chord-item">No chords loaded</div>
+                </div>
+            </section>
+
+            <!-- Playback Controls -->
+            <section class="playback-controls">
+                <button id="play-btn" class="play-btn">▶ Play</button>
+                <button id="pause-btn" class="pause-btn" disabled>⏸ Pause</button>
+                <button id="stop-btn" class="stop-btn" disabled>⏹ Stop</button>
+            </section>
+
+            <!-- Status Display -->
+            <section class="status-section">
+                <div id="status-display">Ready to play</div>
+                <div id="current-chord-display"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Use headphones for best experience. Built with Tone.js and Web Audio API.</p>
+        </footer>
+    </div>
+
+    <!-- Hidden elements for modals -->
+    <div id="chord-edit-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Edit Chord</h3>
+            <input type="text" id="chord-edit-input" placeholder="Enter chord name (e.g., C, Am, F7, C-E-G)">
+            <div class="modal-actions">
+                <button id="save-chord-edit" class="btn-primary">Save</button>
+                <button id="cancel-chord-edit" class="btn-secondary">Cancel</button>
+                <button id="delete-chord" class="btn-danger">Clear Slot</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chord-context-menu" class="context-menu" style="display: none;">
+        <div class="menu-item" id="context-edit">✏️ Edit</div>
+        <div class="menu-item" id="context-duplicate">📋 Duplicate</div>
+        <div class="menu-item" id="context-substitute">🔄 Substitute</div>
+        <div class="menu-item" id="context-insert-before">➕ Insert Before</div>
+        <div class="menu-item" id="context-insert-after">➕ Insert After</div>
+        <div class="menu-item" id="context-delete">🗑️ Clear Slot</div>
+    </div>
+
+    <input type="file" id="import-file-input" style="display: none;" accept=".json,.txt">
+
+    <script src="src/js/script.js"></script>
+</body>
+</html>
