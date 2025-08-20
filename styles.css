@@ -597,6 +597,15 @@ section h2 {
     background: #007bff !important;
 }
 
+.key.in-key {
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+    border-color: #4caf50;
+}
+
+.key.active.in-key {
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+}
+
 .piano-controls {
     margin-top: 20px;
 }
