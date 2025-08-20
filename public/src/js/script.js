@@ -31,11 +31,17 @@ class MusicalAccompanist {
 
 
         // Note mapping utilities for roman numeral parsing
-        this.indexToNote = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        this.SHARP_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        this.FLAT_NOTES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+        this.indexToNote = this.SHARP_NOTES;
         this.noteToIndex = {
-            'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,
-            'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11
+            'C':0, 'C#':1, 'Db':1, 'D':2, 'D#':3, 'Eb':3,
+            'E':4, 'Fb':4, 'E#':5, 'F':5, 'F#':6, 'Gb':6,
+            'G':7, 'G#':8, 'Ab':8, 'A':9, 'A#':10, 'Bb':10,
+            'B':11, 'Cb':11, 'B#':0
         };
+
+        this.updateNoteNames();
         
         // Flag to track if audio has been initialized
         this.audioInitialized = false;
@@ -190,13 +196,15 @@ class MusicalAccompanist {
         if (tonicSelect && modeSelect) {
             tonicSelect.addEventListener('change', (e) => {
                 this.key.tonic = e.target.value;
+                this.updateNoteNames();
                 this.updateRomanNumeralButtons();
                 this.displayChords();
                 this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
             });
-            
+
             modeSelect.addEventListener('change', (e) => {
                 this.key.mode = e.target.value;
+                this.updateNoteNames();
                 this.updateRomanNumeralButtons();
                 this.displayChords();
                 this.showStatus(`Key set to ${this.key.tonic} ${this.key.mode}`);
@@ -2023,6 +2031,14 @@ class MusicalAccompanist {
             statusDisplay.textContent = message;
         }
         console.log('Status:', message);
+    }
+
+    /**
+     * Update note name preferences (sharp vs flat) based on current key
+     */
+    updateNoteNames() {
+        const sharpKeys = ['C','G','D','A','E','B','F#','C#'];
+        this.indexToNote = sharpKeys.includes(this.key.tonic) ? this.SHARP_NOTES : this.FLAT_NOTES;
     }
 
     /**
