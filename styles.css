@@ -38,6 +38,190 @@ header h1 {
 header p {
     font-size: 1.1rem;
     opacity: 0.9;
+    margin-bottom: 20px;
+}
+
+/* Subscription Status Banners */
+.subscription-status {
+    margin-top: 20px;
+}
+
+.user-status-banner {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.user-status-banner.trial {
+    background: rgba(76, 175, 80, 0.15);
+    border-color: rgba(76, 175, 80, 0.5);
+}
+
+.user-status-banner.expired {
+    background: rgba(255, 152, 0, 0.15);
+    border-color: rgba(255, 152, 0, 0.5);
+}
+
+.user-status-banner.premium {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: rgba(255, 215, 0, 0.5);
+}
+
+.subscribe-button, .manage-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.subscribe-button:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+}
+
+.subscribe-button.urgent {
+    background: #ff6b6b;
+}
+
+.subscribe-button.urgent:hover {
+    background: #ff5252;
+}
+
+.manage-button {
+    background: #2196F3;
+}
+
+.manage-button:hover {
+    background: #1976D2;
+}
+
+/* Trial Modal Styles */
+.trial-modal .modal-content {
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.trial-content h2 {
+    color: #4facfe;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 2.2rem;
+}
+
+.trial-subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.trial-benefits {
+    margin-bottom: 40px;
+}
+
+.benefit-section h3 {
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.2rem;
+}
+
+.benefit-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.benefit-section li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    color: #555;
+    position: relative;
+    padding-left: 20px;
+}
+
+.benefit-section li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.pricing-section {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.price-card {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    display: inline-block;
+    min-width: 250px;
+}
+
+.price-card h3 {
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+}
+
+.price {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.price span {
+    font-size: 1.2rem;
+    opacity: 0.8;
+}
+
+.price-card p {
+    opacity: 0.9;
+    margin-bottom: 20px;
+}
+
+.subscribe-btn-modal {
+    background: #4CAF50;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.subscribe-btn-modal:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.trial-note {
+    text-align: center;
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: 20px;
 }
 
 main {

@@ -117,6 +117,14 @@ class MusicalAccompanist {
         this.showChordFunctions = false; // For showing Roman numeral functions
         this.key = { tonic: 'C', mode: 'major' }; // Default, will be updated from HTML
 
+        // Trial and Subscription Management
+        this.trialStartDate = this.getTrialStartDate();
+        this.isSubscribed = this.checkSubscriptionStatus();
+        this.trialDaysRemaining = this.calculateTrialDaysRemaining();
+        
+        // Update UI based on trial/subscription status
+        this.updateTrialUI();
+
 
         // Note mapping utilities for roman numeral parsing
         this.SHARP_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -182,6 +190,118 @@ class MusicalAccompanist {
             this.key.mode = modeSelect.value;
             console.log('Synced key from HTML:', this.key.tonic, this.key.mode);
         }
+    }
+
+    /**
+     * Get or set the trial start date
+     */
+    getTrialStartDate() {
+        let trialStart = localStorage.getItem('trialStartDate');
+        if (!trialStart) {
+            trialStart = new Date().toISOString();
+            localStorage.setItem('trialStartDate', trialStart);
+        }
+        return new Date(trialStart);
+    }
+
+    /**
+     * Calculate remaining days in trial
+     */
+    calculateTrialDaysRemaining() {
+        if (this.isSubscribed) return null;
+        
+        const now = new Date();
+        const trialEnd = new Date(this.trialStartDate);
+        trialEnd.setDate(trialEnd.getDate() + 7); // 7-day trial
+        
+        const timeDiff = trialEnd.getTime() - now.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        
+        return Math.max(0, daysDiff);
+    }
+
+    /**
+     * Check if user has active subscription
+     */
+    checkSubscriptionStatus() {
+        // For demo purposes, check localStorage
+        // In production, this would verify with your backend/Stripe
+        return localStorage.getItem('subscriptionActive') === 'true';
+    }
+
+    /**
+     * Check if user can access features (trial or subscribed)
+     */
+    hasAccess() {
+        return this.isSubscribed || this.trialDaysRemaining > 0;
+    }
+
+    /**
+     * Update UI based on trial/subscription status
+     */
+    updateTrialUI() {
+        const trialBanner = document.getElementById('trial-active-banner');
+        const expiredBanner = document.getElementById('trial-expired-banner');
+        const subscribedBanner = document.getElementById('subscribed-banner');
+        const trialDaysElement = document.getElementById('trial-days-remaining');
+
+        // Hide all banners first
+        trialBanner.style.display = 'none';
+        expiredBanner.style.display = 'none';
+        subscribedBanner.style.display = 'none';
+
+        if (this.isSubscribed) {
+            subscribedBanner.style.display = 'flex';
+        } else if (this.trialDaysRemaining > 0) {
+            trialBanner.style.display = 'flex';
+            trialDaysElement.textContent = `${this.trialDaysRemaining} day${this.trialDaysRemaining !== 1 ? 's' : ''}`;
+        } else {
+            expiredBanner.style.display = 'flex';
+            // Show trial expired modal
+            this.showTrialExpiredModal();
+        }
+    }
+
+    /**
+     * Show trial expired modal
+     */
+    showTrialExpiredModal() {
+        const modal = document.getElementById('trial-expired-modal');
+        modal.style.display = 'block';
+    }
+
+    /**
+     * Activate subscription (for testing/demo)
+     */
+    activateSubscription() {
+        localStorage.setItem('subscriptionActive', 'true');
+        this.isSubscribed = true;
+        this.updateTrialUI();
+        console.log('Subscription activated');
+    }
+
+    /**
+     * Deactivate subscription (for testing/demo)
+     */
+    deactivateSubscription() {
+        localStorage.removeItem('subscriptionActive');
+        this.isSubscribed = false;
+        this.trialDaysRemaining = this.calculateTrialDaysRemaining();
+        this.updateTrialUI();
+        console.log('Subscription deactivated');
+    }
+
+    /**
+     * Reset trial (for testing/demo)
+     */
+    resetTrial() {
+        localStorage.removeItem('trialStartDate');
+        localStorage.removeItem('subscriptionActive');
+        this.trialStartDate = this.getTrialStartDate();
+        this.isSubscribed = false;
+        this.trialDaysRemaining = this.calculateTrialDaysRemaining();
+        this.updateTrialUI();
+        console.log('Trial reset');
     }
 
     /**
@@ -494,9 +614,44 @@ class MusicalAccompanist {
         // Chord type tabs
         document.querySelectorAll('.chord-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
+                // Check if trial has expired and user isn't subscribed
+                if (!this.hasAccess()) {
+                    this.showTrialExpiredModal();
+                    return;
+                }
+                
                 this.switchChordTab(e.target.dataset.type);
             });
         });
+
+        // Trial and subscription event handlers
+        document.getElementById('subscribe-early-btn')?.addEventListener('click', () => {
+            window.open('https://buy.stripe.com/9B600i6Tj3S50cE4j28k800', '_blank');
+        });
+
+        document.getElementById('subscribe-btn')?.addEventListener('click', () => {
+            window.open('https://buy.stripe.com/9B600i6Tj3S50cE4j28k800', '_blank');
+        });
+
+        document.getElementById('manage-subscription')?.addEventListener('click', () => {
+            // In production, this would open Stripe customer portal
+            alert('In production, this would open the Stripe customer portal for subscription management.');
+        });
+
+        // Modal close functionality
+        const trialModal = document.getElementById('trial-expired-modal');
+        if (trialModal) {
+            window.addEventListener('click', (e) => {
+                if (e.target === trialModal) {
+                    trialModal.style.display = 'none';
+                }
+            });
+        }
+
+        // Demo functions for testing (remove in production)
+        window.activateSubscription = () => this.activateSubscription();
+        window.deactivateSubscription = () => this.deactivateSubscription();
+        window.resetTrial = () => this.resetTrial();
     }
 
     /**
@@ -2744,6 +2899,10 @@ class MusicalAccompanist {
      * Transpose progression
      */
     transposeProgression(semitones) {
+        if (!this.hasAccess()) {
+            this.showTrialExpiredModal();
+            return;
+        }
         // Placeholder for transposition functionality
         this.showStatus(`Transposing by ${semitones} semitones not implemented yet`);
     }
@@ -2752,6 +2911,10 @@ class MusicalAccompanist {
      * Export progression
      */
     exportProgression() {
+        if (!this.hasAccess()) {
+            this.showTrialExpiredModal();
+            return;
+        }
         const data = JSON.stringify(this.chordProgression, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -2767,6 +2930,11 @@ class MusicalAccompanist {
      * Import progression
      */
     importProgression(file) {
+        if (!this.hasAccess()) {
+            this.showTrialExpiredModal();
+            return;
+        }
+        
         if (!file) return;
         
         const reader = new FileReader();
