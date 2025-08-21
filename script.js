@@ -4,6 +4,86 @@
  * Uses Tone.js for audio synthesis and Web Audio API for precise timing
  */
 
+// Mapping of which keys use sharps vs flats for spelling
+const KEY_SIGNATURES = {
+    major: {
+        'C': 'sharp',
+        'C#': 'sharp', 'Db': 'flat',
+        'D': 'sharp',
+        'D#': 'flat', 'Eb': 'flat',
+        'E': 'sharp',
+        'F': 'flat',
+        'F#': 'sharp', 'Gb': 'flat',
+        'G': 'sharp',
+        'G#': 'flat', 'Ab': 'flat',
+        'A': 'sharp',
+        'A#': 'flat', 'Bb': 'flat',
+        'B': 'sharp'
+    },
+    minor: {
+        'C': 'flat',
+        'C#': 'sharp', 'Db': 'flat',
+        'D': 'flat',
+        'D#': 'flat', 'Eb': 'flat',
+        'E': 'sharp',
+        'F': 'flat',
+        'F#': 'sharp', 'Gb': 'flat',
+        'G': 'flat',
+        'G#': 'sharp', 'Ab': 'flat',
+        'A': 'sharp',
+        'A#': 'flat', 'Bb': 'flat',
+        'B': 'sharp'
+    }
+};
+
+// Key-specific note spellings for proper enharmonic notation
+const KEY_NOTE_SPELLINGS = {
+    major: {
+        'C': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
+        'C#': ['C#', 'D#', 'E#', 'F#', 'G#', 'A#', 'B#'],
+        'Db': ['Db', 'Eb', 'F', 'Gb', 'Ab', 'Bb', 'C'],
+        'D': ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'],
+        'D#': ['D#', 'E#', 'F##', 'G#', 'A#', 'B#', 'C##'],
+        'Eb': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D'],
+        'E': ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'],
+        'E#': ['E#', 'F##', 'G##', 'A##', 'B#', 'C##', 'D##'],
+        'F': ['F', 'G', 'A', 'Bb', 'C', 'D', 'E'],
+        'F#': ['F#', 'G#', 'A#', 'B', 'C#', 'D#', 'E#'],
+        'Fb': ['Fb', 'Gb', 'Ab', 'Bbb', 'Cb', 'Db', 'Eb'],
+        'G': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
+        'G#': ['G#', 'A#', 'B#', 'C#', 'D#', 'E#', 'F##'],
+        'Gb': ['Gb', 'Ab', 'Bb', 'Cb', 'Db', 'Eb', 'F'],
+        'A': ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#'],
+        'A#': ['A#', 'B#', 'C##', 'D#', 'E#', 'F##', 'G##'],
+        'Ab': ['Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'G'],
+        'B': ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#'],
+        'B#': ['B#', 'C##', 'D##', 'E#', 'F##', 'G##', 'A##'],
+        'Bb': ['Bb', 'C', 'D', 'Eb', 'F', 'G', 'A'],
+        'Cb': ['Cb', 'Db', 'Eb', 'Fb', 'Gb', 'Ab', 'Bb']
+    },
+    minor: {
+        'C': ['C', 'D', 'Eb', 'F', 'G', 'Ab', 'Bb'],
+        'C#': ['C#', 'D#', 'E', 'F#', 'G#', 'A', 'B'],
+        'D': ['D', 'E', 'F', 'G', 'A', 'Bb', 'C'],
+        'Eb': ['Eb', 'F', 'Gb', 'Ab', 'Bb', 'Cb', 'Db'],
+        'E': ['E', 'F#', 'G', 'A', 'B', 'C', 'D'],
+        'F': ['F', 'G', 'Ab', 'Bb', 'C', 'Db', 'Eb'],
+        'F#': ['F#', 'G#', 'A', 'B', 'C#', 'D', 'E'],
+        'G': ['G', 'A', 'Bb', 'C', 'D', 'Eb', 'F'],
+        'G#': ['G#', 'A#', 'B', 'C#', 'D#', 'E', 'F#'],
+        'A': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+        'Bb': ['Bb', 'C', 'Db', 'Eb', 'F', 'Gb', 'Ab'],
+        'B': ['B', 'C#', 'D', 'E', 'F#', 'G', 'A']
+    }
+};
+
+// Chromatic mapping from piano keys to scale degrees for proper labeling
+const CHROMATIC_TO_SCALE_DEGREE = {
+    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 
+    'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 
+    'A#': 10, 'Bb': 10, 'B': 11
+};
+
 class MusicalAccompanist {
     constructor() {
         this.isPlaying = false;
@@ -26,8 +106,7 @@ class MusicalAccompanist {
         this.editingChordIndex = null; // For chord editing
         this.showChordNotes = false; // For showing notes above chords
         this.showChordFunctions = false; // For showing Roman numeral functions
-        this.key = { tonic: 'C', mode: 'major' }; // Current key signature
-
+        this.key = { tonic: 'C', mode: 'major' }; // Default, will be updated from HTML
 
 
         // Note mapping utilities for roman numeral parsing
@@ -71,12 +150,29 @@ class MusicalAccompanist {
         
         // Initialize with empty progression
         this.displayChords();
+        
+        // Sync key from HTML dropdown values
+        this.syncKeyFromHTML();
         this.updateKeyboardForKey();
 
         // Initialize Roman numeral buttons (with slight delay to ensure DOM is ready)
         setTimeout(() => {
             this.updateRomanNumeralButtons();
         }, 100);
+    }
+
+    /**
+     * Sync the internal key state with the HTML dropdown values
+     */
+    syncKeyFromHTML() {
+        const tonicSelect = document.getElementById('key-tonic');
+        const modeSelect = document.getElementById('key-mode');
+        
+        if (tonicSelect && modeSelect) {
+            this.key.tonic = tonicSelect.value;
+            this.key.mode = modeSelect.value;
+            console.log('Synced key from HTML:', this.key.tonic, this.key.mode);
+        }
     }
 
     /**
@@ -248,8 +344,9 @@ class MusicalAccompanist {
         // Piano keyboard events
         document.querySelectorAll('.key').forEach(key => {
             key.addEventListener('click', async (e) => {
-                const note = e.target.dataset.note;
-                await this.toggleNote(note, e.target);
+                // Use the canonical data-note (physical pitch + octave) for internal state
+                const dataNote = e.target.dataset.note;
+                await this.toggleNote(dataNote, e.target);
             });
         });
 
@@ -1915,30 +2012,19 @@ class MusicalAccompanist {
         }
         
         this.selectedNotes.forEach(note => {
+            // note is canonical like C#4 or D4; derive pitch class and octave
+            const octaveMatch = note.match(/(\d+)$/);
+            const octave = octaveMatch ? octaveMatch[1] : '4';
+            const pitchClass = note.replace(/[0-9]/g, '');
+
+            // If we have a chromaticMapping, use the displayed theoretical name for pitch class
+            const displayPitch = (this.chromaticMapping && this.chromaticMapping[pitchClass]) ? this.chromaticMapping[pitchClass] : pitchClass;
+            const displayName = `${displayPitch}${octave}`;
+
             const noteElement = document.createElement('span');
             noteElement.className = 'selected-note';
-            noteElement.textContent = note;
+            noteElement.textContent = displayName;
             display.appendChild(noteElement);
-        });
-    }
-
-    /**
-     * Highlight scale notes on the piano keyboard for the current key
-     */
-    updateKeyboardForKey() {
-        const majorScale = [0, 2, 4, 5, 7, 9, 11];
-        const minorScale = [0, 2, 3, 5, 7, 8, 10];
-        const keyIndex = this.noteToIndex[this.key.tonic];
-        const scale = this.key.mode === 'major' ? majorScale : minorScale;
-        const scaleNotes = scale.map(i => this.indexToNote[(keyIndex + i) % 12]);
-
-        document.querySelectorAll('.key').forEach(key => {
-            const base = key.dataset.note.replace(/[0-9]/g, '');
-            if (scaleNotes.includes(base)) {
-                key.classList.add('in-key');
-            } else {
-                key.classList.remove('in-key');
-            }
         });
     }
 
@@ -2070,6 +2156,173 @@ class MusicalAccompanist {
     volumeToDb(volume) {
         if (volume <= 0) return -Infinity;
         return 20 * Math.log10(volume);
+    }
+
+    /**
+     * Update piano keyboard note labels and highlighting based on current key signature
+     */
+    updateKeyboardForKey() {
+        console.log('updateKeyboardForKey called - Key:', this.key.tonic, this.key.mode);
+        
+        // Get the scale notes for this key using the exact tonic name
+        const scaleNotes = KEY_NOTE_SPELLINGS[this.key.mode] && KEY_NOTE_SPELLINGS[this.key.mode][this.key.tonic];
+        if (!scaleNotes) {
+            console.log('No scale notes found for key:', this.key.tonic, this.key.mode);
+            return;
+        }
+        
+        console.log('Scale notes for', this.key.tonic, this.key.mode, ':', scaleNotes);
+        
+        // Get the tonic index (chromatic position)
+        const keyIndex = this.noteToIndex[this.key.tonic];
+        if (keyIndex === undefined) {
+            console.log('Could not find tonic index for:', this.key.tonic);
+            return;
+        }
+        
+        // Create mapping from chromatic piano key names to scale note names
+        const majorScale = [0, 2, 4, 5, 7, 9, 11];
+        const minorScale = [0, 2, 3, 5, 7, 8, 10];
+        const scaleIntervals = this.key.mode === 'major' ? majorScale : minorScale;
+        
+        // Build the chromatic mapping
+        const chromaticMapping = {};
+        
+        // Function to normalize note names for piano key matching
+        const normalizeNoteName = (noteName) => {
+            if (!noteName || typeof noteName !== 'string') return noteName;
+            // Normalize unicode accidentals to ascii for matching
+            const clean = noteName.replace(/♯/g, '#').replace(/♭/g, 'b');
+
+            // Single-accidental enharmonic equivalents
+            const singleMap = {
+                'E#': 'F', 'B#': 'C',
+                'Cb': 'B', 'Fb': 'E'
+            };
+
+            // Double accidentals
+            const doubleSharpMap = {
+                'C##': 'D', 'D##': 'E', 'E##': 'F#', 'F##': 'G', 'G##': 'A', 'A##': 'B', 'B##': 'C#'
+            };
+            const doubleFlatMap = {
+                'Cbb': 'Bb', 'Dbb': 'C', 'Ebb': 'D', 'Fbb': 'Eb', 'Gbb': 'F', 'Abb': 'G', 'Bbb': 'A'
+            };
+
+            if (singleMap[clean]) return singleMap[clean];
+            if (doubleSharpMap[clean]) return doubleSharpMap[clean];
+            if (doubleFlatMap[clean]) return doubleFlatMap[clean];
+
+            // If it's already a normal pitch name (C, C#, Db, etc.), return ASCII-cleaned name
+            return clean;
+        };
+        
+        // Map scale tones to their proper names using the exact scale notes from KEY_NOTE_SPELLINGS
+        // For each scale note, find which piano key it should appear on
+        scaleNotes.forEach(scaleNoteName => {
+            const normalizedName = normalizeNoteName(scaleNoteName);
+            console.log('Scale note normalization:', scaleNoteName, '->', normalizedName);
+            
+            // Find which piano key this scale note should appear on
+            // The normalized name tells us the physical key, but we display the original scale note name
+            for (let i = 0; i < 12; i++) {
+                const sharpName = this.SHARP_NOTES[i];
+                const flatName = this.FLAT_NOTES[i];
+                
+                // If this chromatic position matches the normalized scale note
+                if (sharpName === normalizedName || flatName === normalizedName) {
+                    chromaticMapping[sharpName] = scaleNoteName;
+                    chromaticMapping[flatName] = scaleNoteName;
+                    console.log('  Mapped chromatic slot', sharpName, '/', flatName, 'to', scaleNoteName);
+                    break;
+                }
+            }
+        });
+        
+        // For non-scale tones, determine the best enharmonic spelling
+        for (let i = 0; i < 12; i++) {
+            const sharpName = this.SHARP_NOTES[i];
+            const flatName = this.FLAT_NOTES[i];
+            
+            if (!chromaticMapping[sharpName]) {
+                // Choose appropriate enharmonic based on key signature preference
+                const usesFlats = scaleNotes.some(note => note.includes('b'));
+                chromaticMapping[sharpName] = usesFlats ? flatName : sharpName;
+            }
+            
+            if (!chromaticMapping[flatName] && flatName !== sharpName) {
+                chromaticMapping[flatName] = chromaticMapping[sharpName];
+            }
+        }
+        
+        console.log('Chromatic mapping:', chromaticMapping);
+        try {
+            console.log('Chromatic mapping (JSON):', JSON.stringify(chromaticMapping));
+        } catch (e) {
+            console.log('Chromatic mapping stringify failed:', e);
+        }
+        console.log('Chromatic mapping entries:');
+        Object.keys(chromaticMapping).forEach(k => console.log(k, '->', chromaticMapping[k]));
+        console.log('Scale notes (for highlighting):', scaleNotes);
+        console.log('Normalized scale notes for highlighting:', scaleNotes.map(normalizeNoteName));
+
+        // Additional runtime info to help debugging
+        try {
+            console.log('indexToNote array:', this.indexToNote);
+        } catch (e) {
+            console.log('indexToNote unavailable:', e);
+        }
+        try {
+            console.log('noteToIndex[tonic]:', this.key && this.key.tonic ? this.noteToIndex[this.key.tonic] : undefined);
+        } catch (e) {
+            console.log('noteToIndex lookup failed:', e);
+        }
+
+    // Expose a small helper to dump keyboard state from the page console
+        try {
+            window._dumpKeyboardState = () => {
+                const normalizedScale = scaleNotes.map(normalizeNoteName);
+                const keys = Array.from(document.querySelectorAll('.key')).map(k => ({
+                    dataNote: k.dataset.note,
+                    pitchClass: (k.dataset.note || '').replace(/[0-9]/g, ''),
+                    label: k.textContent,
+                    inKey: k.classList.contains('in-key')
+                }));
+                return {
+                    currentKey: this.key,
+                    chromaticMapping,
+                    scaleNotes,
+                    normalizedScale,
+                    keys
+                };
+            };
+            console.log('Helper: window._dumpKeyboardState() available — call it to get a JSON-friendly dump of mapping and key labels.');
+        } catch (e) {
+            console.log('Could not install _dumpKeyboardState helper:', e);
+        }
+    // Persist mapping for other handlers
+    this.chromaticMapping = chromaticMapping;
+        
+        // Update each piano key
+        document.querySelectorAll('.key').forEach(keyEl => {
+            const originalPitchClass = keyEl.dataset.note.replace(/[0-9]/g, '');
+            
+            // Get the proper label for this key
+            const newLabel = chromaticMapping[originalPitchClass] || originalPitchClass;
+            keyEl.textContent = newLabel;
+            
+            // For highlighting, we need to check if the normalized version of the displayed label
+            // matches any of the normalized scale notes
+            const normalizedDisplayLabel = normalizeNoteName(newLabel);
+            const normalizedScaleNotes = scaleNotes.map(normalizeNoteName);
+            
+            if (normalizedScaleNotes.includes(normalizedDisplayLabel)) {
+                keyEl.classList.add('in-key');
+            } else {
+                keyEl.classList.remove('in-key');
+            }
+        });
+        
+        console.log('Updated keyboard labels and highlighting');
     }
 
     /**
