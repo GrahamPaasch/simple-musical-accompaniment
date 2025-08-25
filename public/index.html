@@ -327,6 +327,10 @@
 
     <input type="file" id="import-file-input" style="display: none;" accept=".json,.txt">
 
+    <script type="module">
+        import { inject } from '@vercel/analytics';
+        inject();
+    </script>
     <script src="src/js/script.js"></script>
 </body>
 </html>
