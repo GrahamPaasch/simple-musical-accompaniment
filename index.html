@@ -3,15 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Musical Accompanist Tool</title>
+    <title>Musical Accompanist Tool - Printable Reference</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Additional print-specific styles */
+        @media print {
+            .print-page-break {
+                page-break-before: always;
+            }
+            .print-instruction {
+                font-style: italic;
+                color: #666;
+                font-size: 9pt;
+                margin-bottom: 10pt;
+                text-align: center;
+            }
+            .print-page-number::after {
+                content: "Page " counter(page);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎵 Musical Accompanist Tool</h1>
             <p>Practice with customizable chord progressions and drones</p>
+            <div class="print-instruction">
+                Interactive web application - printable reference guide
+            </div>
             <div class="subscription-status">
                 <div id="trial-active-banner" class="user-status-banner trial">
                     <span id="trial-status-text">🎵 Free Trial Active - <span id="trial-days-remaining">7 days</span> remaining</span>
@@ -31,6 +52,8 @@
         <main>
             <!-- Control Panel -->
             <section class="control-panel">
+                <h2>⚙️ Settings & Controls</h2>
+                <div class="print-instruction">Configure your practice session settings</div>
                 <div class="controls-row">
                     <div class="control-group">
                         <label for="tempo">Tempo (BPM):</label>
@@ -43,8 +66,6 @@
                         <input type="range" id="volume" min="0" max="100" value="50">
                         <span id="volume-display">50%</span>
                     </div>
-                    
-
                     
                     <div class="control-group">
                         <label for="time-signature">Time Signature:</label>
@@ -214,8 +235,9 @@
             </section>
 
             <!-- Piano Keyboard -->
-            <section class="piano-section">
+            <section class="piano-section print-page-break">
                 <h2>🎹 Piano Keyboard - Click to Build Chords</h2>
+                <div class="print-instruction">Use this keyboard to build custom chords by selecting notes</div>
                 <div id="piano-keyboard" class="piano-keyboard">
                     <div class="piano-keys">
                         <!-- White keys -->
@@ -277,6 +299,7 @@
             <section class="chord-display-section">
                 <div class="chord-display-header">
                     <h2>Current Progression</h2>
+                    <div class="print-instruction">Your chord progression will appear below when created</div>
                     <div class="progression-controls">
                         <div class="progression-actions">
                             <div class="measure-setup">
@@ -293,7 +316,7 @@
                 </div>
                 
                 <div id="chord-display" class="chord-display">
-                    <div class="chord-item">No chords loaded</div>
+                    <div class="chord-item">No chords loaded - Use the tools above to create your progression</div>
                 </div>
             </section>
 
@@ -312,7 +335,11 @@
         </main>
 
         <footer>
-            <p>Use headphones for best experience. Built with Tone.js and Web Audio API.</p>
+            <div class="print-instruction">
+                <p>Musical Accompanist Tool - Interactive web application</p>
+                <p>Visit the online version for full functionality with audio playback</p>
+                <p>Built with Tone.js and Web Audio API</p>
+            </div>
         </footer>
     </div>
 

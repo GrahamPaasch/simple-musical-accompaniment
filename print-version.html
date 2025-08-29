@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Accompanist Tool - Print Reference Guide</title>
+    <style>
+        /* Print-optimized styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: black;
+            background: white;
+            padding: 0;
+        }
+        
+        @page {
+            size: 8.5in 11in;
+            margin: 0.75in;
+        }
+        
+        .container {
+            max-width: none;
+            background: white;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20pt;
+            border-bottom: 2pt solid #333;
+            padding-bottom: 15pt;
+        }
+        
+        header h1 {
+            font-size: 20pt;
+            margin-bottom: 8pt;
+            color: #333;
+        }
+        
+        header p {
+            font-size: 12pt;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        section {
+            margin-bottom: 15pt;
+            page-break-inside: avoid;
+        }
+        
+        h2 {
+            font-size: 14pt;
+            margin-bottom: 10pt;
+            border-bottom: 1pt solid #666;
+            padding-bottom: 3pt;
+            color: #333;
+        }
+        
+        h3 {
+            font-size: 12pt;
+            margin-bottom: 8pt;
+            color: #333;
+        }
+        
+        .two-column {
+            column-count: 2;
+            column-gap: 20pt;
+            column-fill: balance;
+        }
+        
+        .chord-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(50pt, 1fr));
+            gap: 5pt;
+            margin-bottom: 10pt;
+        }
+        
+        .chord-btn {
+            border: 1pt solid #333;
+            padding: 5pt;
+            text-align: center;
+            font-size: 10pt;
+            background: white;
+            min-height: 25pt;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .piano-keys {
+            display: flex;
+            position: relative;
+            height: 60pt;
+            margin: 15pt 0;
+            border: 1pt solid #333;
+        }
+        
+        .key {
+            border: 1pt solid #000;
+            text-align: center;
+            font-size: 8pt;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 3pt;
+        }
+        
+        .key.white {
+            background: white;
+            width: 20pt;
+            height: 60pt;
+            z-index: 1;
+        }
+        
+        .key.black {
+            background: #333;
+            color: white;
+            width: 12pt;
+            height: 40pt;
+            position: absolute;
+            z-index: 2;
+            margin-left: -6pt;
+        }
+        
+        /* Position black keys */
+        .key.black:nth-of-type(1) { left: 20pt; }
+        .key.black:nth-of-type(2) { left: 40pt; }
+        .key.black:nth-of-type(3) { left: 80pt; }
+        .key.black:nth-of-type(4) { left: 100pt; }
+        .key.black:nth-of-type(5) { left: 120pt; }
+        .key.black:nth-of-type(6) { left: 160pt; }
+        .key.black:nth-of-type(7) { left: 180pt; }
+        .key.black:nth-of-type(8) { left: 220pt; }
+        .key.black:nth-of-type(9) { left: 240pt; }
+        .key.black:nth-of-type(10) { left: 260pt; }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15pt;
+            margin-bottom: 15pt;
+        }
+        
+        .setting-item {
+            padding: 8pt;
+            border: 1pt solid #ccc;
+            background: #f9f9f9;
+        }
+        
+        .setting-label {
+            font-weight: bold;
+            margin-bottom: 3pt;
+        }
+        
+        .chord-progression-area {
+            border: 2pt solid #333;
+            padding: 15pt;
+            min-height: 80pt;
+            background: #f9f9f9;
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+        
+        footer {
+            margin-top: 20pt;
+            padding-top: 10pt;
+            border-top: 1pt solid #ccc;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        .instruction {
+            font-style: italic;
+            color: #666;
+            font-size: 9pt;
+            margin-bottom: 8pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- PAGE 1 -->
+        <header>
+            <h1>🎵 Musical Accompanist Tool</h1>
+            <p>Practice Reference Guide - Chord Progressions & Controls</p>
+        </header>
+
+        <main>
+            <!-- Settings & Controls -->
+            <section>
+                <h2>⚙️ Settings & Controls</h2>
+                <div class="instruction">Configure your practice session with these essential settings</div>
+                
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <div class="setting-label">Tempo (BPM)</div>
+                        <div>Range: 40-200 BPM<br>Default: 120 BPM</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">Time Signature</div>
+                        <div>Options: 2/4, 3/4, 4/4, 6/8, 8/8<br>Default: 4/4</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">Key Signature</div>
+                        <div>All 12 chromatic keys<br>Major and Minor modes</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">Options</div>
+                        <div>☑ Loop Mode<br>☑ Metronome Click</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Roman Numeral Chords -->
+            <section>
+                <h2>🎼 Roman Numeral Chord Reference</h2>
+                
+                <div class="two-column">
+                    <div>
+                        <h3>Basic Triads</h3>
+                        <div class="chord-grid">
+                            <div class="chord-btn">I</div>
+                            <div class="chord-btn">ii</div>
+                            <div class="chord-btn">iii</div>
+                            <div class="chord-btn">IV</div>
+                            <div class="chord-btn">V</div>
+                            <div class="chord-btn">vi</div>
+                            <div class="chord-btn">vii°</div>
+                        </div>
+                        
+                        <h3>Suspended Chords</h3>
+                        <div class="chord-grid">
+                            <div class="chord-btn">Isus4</div>
+                            <div class="chord-btn">Vsus4</div>
+                            <div class="chord-btn">IVsus2</div>
+                        </div>
+                        
+                        <h3>7th Chords</h3>
+                        <div class="chord-grid">
+                            <div class="chord-btn">Imaj7</div>
+                            <div class="chord-btn">iim7</div>
+                            <div class="chord-btn">iiim7</div>
+                            <div class="chord-btn">IVmaj7</div>
+                            <div class="chord-btn">V7</div>
+                            <div class="chord-btn">vim7</div>
+                            <div class="chord-btn">viim7b5</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3>Secondary Dominants</h3>
+                        <div class="chord-grid">
+                            <div class="chord-btn">V7/V</div>
+                            <div class="chord-btn">V7/vi</div>
+                            <div class="chord-btn">V7/IV</div>
+                            <div class="chord-btn">V7/ii</div>
+                            <div class="chord-btn">V7/iii</div>
+                        </div>
+                        
+                        <h3>Advanced Chords</h3>
+                        <div class="chord-grid">
+                            <div class="chord-btn">viio7</div>
+                            <div class="chord-btn">iio7</div>
+                            <div class="chord-btn">III+</div>
+                            <div class="chord-btn">V+</div>
+                        </div>
+                        
+                        <h3>Borrowed Chords</h3>
+                        <div class="chord-grid">
+                            <div class="chord-btn">♭VII</div>
+                            <div class="chord-btn">♭VI</div>
+                            <div class="chord-btn">♭II</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chord Progression Workspace -->
+            <section>
+                <h2>Current Progression</h2>
+                <div class="instruction">Your created chord progression will display here</div>
+                <div class="chord-progression-area">
+                    [ Empty - Use the web application to create and save progressions ]
+                </div>
+            </section>
+        </main>
+
+        <!-- PAGE 2 -->
+        <section class="page-break">
+            <h2>🎹 Piano Keyboard Reference</h2>
+            <div class="instruction">Use this keyboard layout to build custom chords by selecting notes</div>
+            
+            <div class="piano-keys">
+                <!-- White keys -->
+                <div class="key white">C</div>
+                <div class="key white">D</div>
+                <div class="key white">E</div>
+                <div class="key white">F</div>
+                <div class="key white">G</div>
+                <div class="key white">A</div>
+                <div class="key white">B</div>
+                <div class="key white">C</div>
+                <div class="key white">D</div>
+                <div class="key white">E</div>
+                <div class="key white">F</div>
+                <div class="key white">G</div>
+                <div class="key white">A</div>
+                <div class="key white">B</div>
+
+                <!-- Black keys -->
+                <div class="key black">C#</div>
+                <div class="key black">D#</div>
+                <div class="key black">F#</div>
+                <div class="key black">G#</div>
+                <div class="key black">A#</div>
+                <div class="key black">C#</div>
+                <div class="key black">D#</div>
+                <div class="key black">F#</div>
+                <div class="key black">G#</div>
+                <div class="key black">A#</div>
+            </div>
+        </section>
+
+        <!-- Common Chord Progressions -->
+        <section>
+            <h2>📚 Common Chord Progressions</h2>
+            <div class="two-column">
+                <div>
+                    <h3>Popular Progressions</h3>
+                    <div style="line-height: 1.6;">
+                        <strong>I-V-vi-IV</strong> (Pop progression)<br>
+                        <strong>ii-V-I</strong> (Jazz turnaround)<br>
+                        <strong>I-vi-IV-V</strong> (50s progression)<br>
+                        <strong>vi-IV-I-V</strong> (Pop variation)<br>
+                        <strong>I-iii-vi-IV</strong> (Ballad progression)<br>
+                    </div>
+                    
+                    <h3>Jazz Standards</h3>
+                    <div style="line-height: 1.6;">
+                        <strong>Imaj7-vim7-iim7-V7</strong><br>
+                        <strong>iiim7-vim7-iim7-V7</strong><br>
+                        <strong>Imaj7-V7/ii-iim7-V7</strong><br>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Practice Tips</h3>
+                    <div style="line-height: 1.6;">
+                        • Start with simple I-IV-V progressions<br>
+                        • Practice in different keys<br>
+                        • Use metronome for steady timing<br>
+                        • Try different time signatures<br>
+                        • Experiment with tempo changes<br>
+                    </div>
+                    
+                    <h3>Key Relationships</h3>
+                    <div style="line-height: 1.6;">
+                        <strong>Circle of Fifths:</strong><br>
+                        C - G - D - A - E - B - F# - C#<br>
+                        F - Bb - Eb - Ab - Db - Gb - Cb<br>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Reference -->
+        <section>
+            <h2>⚡ Quick Reference</h2>
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <div class="setting-label">Major Scale Chords</div>
+                    <div>I, ii, iii, IV, V, vi, vii°</div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">Minor Scale Chords</div>
+                    <div>i, ii°, III, iv, v, VI, VII</div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">Function Groups</div>
+                    <div><strong>Tonic:</strong> I, iii, vi<br><strong>Subdominant:</strong> ii, IV<br><strong>Dominant:</strong> V, vii°</div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">Common Time Signatures</div>
+                    <div>4/4: 4 quarter notes<br>3/4: 3 quarter notes<br>6/8: 6 eighth notes</div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p><strong>Musical Accompanist Tool</strong> - Interactive Web Application</p>
+            <p>Visit the online version for full audio playback and interactive features</p>
+            <p>Built with Tone.js and Web Audio API • Educational tool for music practice</p>
+        </footer>
+    </div>
+</body>
+</html>

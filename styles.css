@@ -13,6 +13,278 @@ body {
     color: #333;
 }
 
+/* Print Styles for Two-Page Layout */
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    body {
+        background: white !important;
+        padding: 0;
+        font-size: 12pt;
+        line-height: 1.4;
+        color: black !important;
+    }
+    
+    .container {
+        max-width: none;
+        background: white;
+        box-shadow: none;
+        border-radius: 0;
+        overflow: visible;
+    }
+    
+    /* Page layout */
+    @page {
+        size: 8.5in 11in;
+        margin: 0.5in;
+    }
+    
+    /* Hide interactive elements */
+    .subscription-status,
+    .playback-controls,
+    .status-section,
+    .piano-action-buttons,
+    .progression-controls,
+    #play-btn, #pause-btn, #stop-btn,
+    .modal, .context-menu,
+    script, .vercel-analytics,
+    footer {
+        display: none !important;
+    }
+    
+    /* Header adjustments for print */
+    header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+        color: white !important;
+        padding: 15pt;
+        text-align: center;
+        page-break-after: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    header h1 {
+        font-size: 18pt;
+        margin-bottom: 8pt;
+        color: white !important;
+    }
+    
+    header p {
+        font-size: 12pt;
+        color: white !important;
+        margin-bottom: 0;
+    }
+    
+    /* Section spacing */
+    section {
+        margin-bottom: 20pt;
+        page-break-inside: avoid;
+    }
+    
+    /* Control panel - condensed for print */
+    .control-panel {
+        page-break-after: avoid;
+    }
+    
+    .controls-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10pt;
+        margin-bottom: 10pt;
+    }
+    
+    .control-group {
+        margin-right: 15pt;
+        min-width: 120pt;
+    }
+    
+    .control-group label {
+        font-weight: bold;
+        font-size: 10pt;
+    }
+    
+    /* Roman numeral section - page 1 focus */
+    .roman-numeral-section {
+        page-break-before: avoid;
+        page-break-after: auto;
+    }
+    
+    .roman-numeral-section h2 {
+        font-size: 14pt;
+        margin-bottom: 10pt;
+        border-bottom: 2pt solid #4facfe;
+        padding-bottom: 5pt;
+    }
+    
+    .chord-type-tabs {
+        display: flex;
+        gap: 5pt;
+        margin-bottom: 15pt;
+        flex-wrap: wrap;
+    }
+    
+    .chord-tab {
+        background: #f0f0f0;
+        border: 1pt solid #ccc;
+        padding: 5pt 10pt;
+        font-size: 10pt;
+        border-radius: 3pt;
+    }
+    
+    .chord-tab.active {
+        background: #4facfe;
+        color: white;
+    }
+    
+    .chord-group {
+        margin-bottom: 15pt;
+    }
+    
+    .chord-category {
+        margin-bottom: 12pt;
+    }
+    
+    .category-label {
+        font-weight: bold;
+        font-size: 11pt;
+        margin-bottom: 5pt;
+        display: block;
+        color: #333;
+    }
+    
+    .roman-numeral-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5pt;
+    }
+    
+    .roman-chord-btn {
+        background: white;
+        border: 1pt solid #333;
+        padding: 5pt 8pt;
+        font-size: 10pt;
+        border-radius: 3pt;
+        min-width: 40pt;
+        text-align: center;
+    }
+    
+    /* Piano section - start of page 2 */
+    .piano-section {
+        page-break-before: always;
+        page-break-after: avoid;
+    }
+    
+    .piano-section h2 {
+        font-size: 14pt;
+        margin-bottom: 10pt;
+        border-bottom: 2pt solid #4facfe;
+        padding-bottom: 5pt;
+    }
+    
+    .piano-keyboard {
+        margin-bottom: 15pt;
+    }
+    
+    .piano-keys {
+        display: flex;
+        position: relative;
+        height: 80pt;
+        margin-bottom: 10pt;
+    }
+    
+    .key {
+        border: 1pt solid #000;
+        text-align: center;
+        font-size: 8pt;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 5pt;
+    }
+    
+    .key.white {
+        background: white;
+        width: 25pt;
+        height: 80pt;
+        z-index: 1;
+    }
+    
+    .key.black {
+        background: #333;
+        color: white;
+        width: 15pt;
+        height: 50pt;
+        position: absolute;
+        z-index: 2;
+        margin-left: -7.5pt;
+    }
+    
+    /* Position black keys */
+    .key.black[data-note="C#4"] { left: 25pt; }
+    .key.black[data-note="D#4"] { left: 50pt; }
+    .key.black[data-note="F#4"] { left: 100pt; }
+    .key.black[data-note="G#4"] { left: 125pt; }
+    .key.black[data-note="A#4"] { left: 150pt; }
+    .key.black[data-note="C#5"] { left: 200pt; }
+    .key.black[data-note="D#5"] { left: 225pt; }
+    .key.black[data-note="F#5"] { left: 275pt; }
+    .key.black[data-note="G#5"] { left: 300pt; }
+    .key.black[data-note="A#5"] { left: 325pt; }
+    
+    /* Chord display section */
+    .chord-display-section {
+        page-break-inside: avoid;
+    }
+    
+    .chord-display-section h2 {
+        font-size: 14pt;
+        margin-bottom: 10pt;
+        border-bottom: 2pt solid #4facfe;
+        padding-bottom: 5pt;
+    }
+    
+    .chord-display {
+        border: 1pt solid #ccc;
+        padding: 15pt;
+        background: #f9f9f9;
+        min-height: 100pt;
+        font-family: monospace;
+        font-size: 10pt;
+    }
+    
+    /* Hide slider inputs, show only labels and values */
+    input[type="range"] {
+        display: none;
+    }
+    
+    input[type="checkbox"] {
+        width: 10pt;
+        height: 10pt;
+    }
+    
+    select {
+        font-size: 9pt;
+        padding: 2pt;
+    }
+    
+    /* Ensure proper spacing */
+    h2 {
+        color: #333 !important;
+    }
+    
+    /* Additional spacing for readability */
+    .roman-chord-info {
+        margin-top: 15pt;
+        padding: 10pt;
+        background: #f0f0f0;
+        border-radius: 5pt;
+        font-size: 10pt;
+    }
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -2348,3 +2620,74 @@ footer {
 }
 
 
+
+/* Additional Print Optimizations */
+@media print {
+    /* Ensure consistent typography */
+    .roman-numeral-section {
+        background: none !important;
+        color: black !important;
+    }
+    
+    .roman-numeral-section h2 {
+        color: #333 !important;
+    }
+    
+    /* Better button styling for print */
+    button, .roman-chord-btn, .chord-tab {
+        border: 1pt solid #333 !important;
+        background: white !important;
+        color: black !important;
+        font-size: 9pt !important;
+        padding: 3pt 6pt !important;
+    }
+    
+    .chord-tab.active {
+        background: #e0e0e0 !important;
+        font-weight: bold !important;
+    }
+    
+    /* Optimize space usage */
+    .roman-numeral-controls {
+        gap: 10pt;
+    }
+    
+    .chord-group {
+        display: block !important;
+        margin-bottom: 12pt;
+    }
+    
+    .chord-group[data-group]:not(.active) {
+        display: block !important;
+    }
+    
+    /* Print layout adjustments */
+    .piano-controls {
+        display: none !important;
+    }
+    
+    .selected-notes, .slot-selection-info {
+        display: none !important;
+    }
+    
+    /* Improve text contrast */
+    .print-instruction {
+        color: #666 !important;
+        font-style: italic;
+    }
+    
+    /* Page numbering */
+    .print-page-number {
+        position: fixed;
+        bottom: 10pt;
+        right: 10pt;
+        font-size: 9pt;
+    }
+}
+
+/* Screen-only styles to hide print instructions */
+@media screen {
+    .print-instruction {
+        display: none;
+    }
+}
