@@ -34,17 +34,8 @@
                 Interactive web application - printable reference guide
             </div>
             <div class="subscription-status">
-                <div id="trial-active-banner" class="user-status-banner trial">
-                    <span id="trial-status-text">🎵 Free Trial Active - <span id="trial-days-remaining">7 days</span> remaining</span>
-                    <button id="subscribe-early-btn" class="subscribe-button">Subscribe Now - $10/month</button>
-                </div>
-                <div id="trial-expired-banner" class="user-status-banner expired" style="display: none;">
-                    <span>⏰ Free Trial Expired - Subscribe to continue using all features</span>
-                    <button id="subscribe-btn" class="subscribe-button urgent">Subscribe Now - $10/month</button>
-                </div>
-                <div id="subscribed-banner" class="user-status-banner premium" style="display: none;">
-                    <span>⭐ Premium Subscriber - Thank you for supporting music education!</span>
-                    <button id="manage-subscription" class="manage-button">Manage Subscription</button>
+                <div class="user-status-banner free-access">
+                    <span>✅ All features are free to use. Happy practicing!</span>
                 </div>
             </div>
         </header>
@@ -367,43 +358,6 @@
     </div>
 
     <input type="file" id="import-file-input" style="display: none;" accept=".json,.txt">
-
-    <!-- Trial Expired Modal -->
-    <div id="trial-expired-modal" class="modal" style="display: none;">
-        <div class="modal-content trial-modal">
-            <div class="trial-content">
-                <h2>🎵 Your Free Trial Has Ended</h2>
-                <p class="trial-subtitle">Continue enjoying unlimited access to all features with a monthly subscription!</p>
-                
-                <div class="trial-benefits">
-                    <div class="benefit-section">
-                        <h3>🎼 What You'll Keep</h3>
-                        <ul>
-                            <li>All chord types (triads, 7ths, secondary dominants)</li>
-                            <li>Roman numeral analysis</li>
-                            <li>Piano keyboard chord builder</li>
-                            <li>Custom progressions & export/import</li>
-                            <li>All key signatures and modes</li>
-                            <li>Tempo and time signature controls</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="pricing-section">
-                    <div class="price-card">
-                        <h3>Monthly Subscription</h3>
-                        <div class="price">$10<span>/month</span></div>
-                        <p>Cancel anytime • No commitment required</p>
-                        <a href="https://buy.stripe.com/9B600i6Tj3S50cE4j28k800" target="_blank" class="subscribe-btn-modal">
-                            Subscribe Now
-                        </a>
-                    </div>
-                </div>
-                
-                <p class="trial-note">Secure payment processed by Stripe. Your subscription starts immediately.</p>
-            </div>
-        </div>
-    </div>
 
     <script type="module">
         import { inject } from '@vercel/analytics';
