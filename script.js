@@ -117,6 +117,42 @@ class MusicalAccompanist {
         this.showChordFunctions = false; // For showing Roman numeral functions
         this.key = { tonic: 'C', mode: 'major' }; // Default, will be updated from HTML
 
+        // Tuning configuration
+        this.concertPitch = parseFloat(localStorage.getItem('concertPitchHz')) || 440;
+        this.globalDetune = parseFloat(localStorage.getItem('globalDetuneCents')) || 0;
+        this.temperament = localStorage.getItem('temperamentSetting') || 'equal';
+        const storedOffsets = localStorage.getItem('customPitchOffsets');
+        if (storedOffsets) {
+            try {
+                const parsedOffsets = JSON.parse(storedOffsets);
+                this.customPitchClassOffsets = Array.isArray(parsedOffsets) && parsedOffsets.length === 12
+                    ? parsedOffsets.map(val => parseFloat(val) || 0)
+                    : new Array(12).fill(0);
+            } catch (error) {
+                console.warn('Invalid stored pitch offsets, resetting to defaults.', error);
+                this.customPitchClassOffsets = new Array(12).fill(0);
+            }
+        } else {
+            this.customPitchClassOffsets = new Array(12).fill(0);
+        }
+        this.baseTemperamentOffsets = new Array(12).fill(0);
+        this.metronomeSubdivision = localStorage.getItem('metronomeSubdivision') || 'quarter';
+        this.metronomeAccentPattern = localStorage.getItem('metronomeAccentPattern') || 'downbeat';
+        this.metronomeBeatCount = 0;
+        const defaultMuteSettings = { root: false, third: false, fifth: false, seventh: false };
+        const storedMuteSettings = localStorage.getItem('voiceMuteSettings');
+        if (storedMuteSettings) {
+            try {
+                const parsed = JSON.parse(storedMuteSettings);
+                this.voiceMuteSettings = { ...defaultMuteSettings, ...parsed };
+            } catch (error) {
+                console.warn('Invalid mute settings in storage, resetting.', error);
+                this.voiceMuteSettings = { ...defaultMuteSettings };
+            }
+        } else {
+            this.voiceMuteSettings = { ...defaultMuteSettings };
+        }
+
         // Note mapping utilities for roman numeral parsing
         this.SHARP_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
         this.FLAT_NOTES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
@@ -129,6 +165,7 @@ class MusicalAccompanist {
         };
 
         this.updateNoteNames();
+        this.updateTemperamentOffsets();
         
         // Flag to track if audio has been initialized
         this.audioInitialized = false;
@@ -180,6 +217,7 @@ class MusicalAccompanist {
             this.key.tonic = tonicSelect.value;
             this.key.mode = modeSelect.value;
             console.log('Synced key from HTML:', this.key.tonic, this.key.mode);
+            this.updateTemperamentOffsets();
         }
     }
 
@@ -302,6 +340,7 @@ class MusicalAccompanist {
             tonicSelect.addEventListener('change', (e) => {
                 this.key.tonic = e.target.value;
                 this.updateNoteNames();
+                this.updateTemperamentOffsets();
                 this.updateRomanNumeralButtons();
                 this.displayChords();
                 this.updateKeyboardForKey();
@@ -311,6 +350,7 @@ class MusicalAccompanist {
             modeSelect.addEventListener('change', (e) => {
                 this.key.mode = e.target.value;
                 this.updateNoteNames();
+                this.updateTemperamentOffsets();
                 this.updateRomanNumeralButtons();
                 this.displayChords();
                 this.updateKeyboardForKey();
@@ -326,6 +366,115 @@ class MusicalAccompanist {
         document.getElementById('metronome-toggle').addEventListener('change', (e) => {
             this.metronomeEnabled = e.target.checked;
             this.showStatus(`Metronome ${this.metronomeEnabled ? 'On' : 'Off'}`);
+        });
+
+        const concertPitchInput = document.getElementById('concert-pitch');
+        if (concertPitchInput) {
+            concertPitchInput.addEventListener('change', (e) => {
+                const value = parseFloat(e.target.value);
+                if (Number.isFinite(value)) {
+                    const clamped = Math.max(400, Math.min(460, value));
+                    this.concertPitch = clamped;
+                    e.target.value = clamped.toFixed(1);
+                    localStorage.setItem('concertPitchHz', this.concertPitch);
+                    this.showStatus(`Concert pitch set to ${clamped.toFixed(1)} Hz`);
+                } else {
+                    e.target.value = this.concertPitch.toFixed(1);
+                }
+            });
+        }
+
+        const temperamentSelect = document.getElementById('temperament');
+        if (temperamentSelect) {
+            temperamentSelect.addEventListener('change', (e) => {
+                this.temperament = e.target.value;
+                localStorage.setItem('temperamentSetting', this.temperament);
+                this.updateTemperamentOffsets();
+                this.showStatus(`Temperament set to ${temperamentSelect.options[temperamentSelect.selectedIndex].text}`);
+            });
+        }
+
+        const globalDetuneSlider = document.getElementById('global-detune');
+        if (globalDetuneSlider) {
+            globalDetuneSlider.addEventListener('input', (e) => {
+                this.globalDetune = parseInt(e.target.value, 10) || 0;
+                localStorage.setItem('globalDetuneCents', this.globalDetune);
+                this.updateGlobalDetuneDisplay();
+            });
+        }
+
+        const subdivisionSelect = document.getElementById('metronome-subdivision');
+        if (subdivisionSelect) {
+            subdivisionSelect.addEventListener('change', (e) => {
+                this.metronomeSubdivision = e.target.value;
+                localStorage.setItem('metronomeSubdivision', this.metronomeSubdivision);
+                this.showStatus(`Metronome subdivision set to ${subdivisionSelect.options[subdivisionSelect.selectedIndex].text}`);
+            });
+        }
+
+        const accentSelect = document.getElementById('metronome-accent');
+        if (accentSelect) {
+            accentSelect.addEventListener('change', (e) => {
+                this.metronomeAccentPattern = e.target.value;
+                localStorage.setItem('metronomeAccentPattern', this.metronomeAccentPattern);
+                this.showStatus(`Metronome accent pattern set to ${accentSelect.options[accentSelect.selectedIndex].text}`);
+            });
+        }
+
+        ['root', 'third', 'fifth', 'seventh'].forEach(role => {
+            const checkbox = document.getElementById(`mute-${role}`);
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    this.voiceMuteSettings[role] = e.target.checked;
+                    this.persistVoiceMuteSettings();
+                    const label = role.charAt(0).toUpperCase() + role.slice(1);
+                    this.showStatus(`${label} voice ${e.target.checked ? 'muted' : 'active'}`);
+                });
+            }
+        });
+
+        const openTuningButton = document.getElementById('open-note-tuning');
+        if (openTuningButton) {
+            openTuningButton.addEventListener('click', () => {
+                this.openNoteTuningModal();
+            });
+        }
+
+        const closeTuningButton = document.getElementById('close-note-tuning');
+        if (closeTuningButton) {
+            closeTuningButton.addEventListener('click', () => {
+                this.closeNoteTuningModal(false);
+            });
+        }
+
+        const saveTuningButton = document.getElementById('save-note-offsets');
+        if (saveTuningButton) {
+            saveTuningButton.addEventListener('click', () => {
+                this.closeNoteTuningModal(true);
+            });
+        }
+
+        const resetTuningButton = document.getElementById('reset-note-offsets');
+        if (resetTuningButton) {
+            resetTuningButton.addEventListener('click', () => {
+                this.resetNoteOffsets();
+            });
+        }
+
+        window.addEventListener('click', (e) => {
+            const tuningModal = document.getElementById('note-tuning-modal');
+            if (tuningModal && e.target === tuningModal) {
+                this.closeNoteTuningModal(false);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const tuningModal = document.getElementById('note-tuning-modal');
+                if (tuningModal && tuningModal.style.display === 'block') {
+                    this.closeNoteTuningModal(false);
+                }
+            }
         });
 
         // Playback controls
@@ -490,6 +639,13 @@ class MusicalAccompanist {
             });
         });
 
+        document.querySelectorAll('.drill-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const drillId = e.currentTarget.dataset.drill;
+                this.loadPracticeDrill(drillId);
+            });
+        });
+
         // Chord type tabs
         document.querySelectorAll('.chord-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
@@ -532,9 +688,536 @@ class MusicalAccompanist {
         // Set slider values
         document.getElementById('tempo').value = this.tempo;
         document.getElementById('volume').value = Math.round(this.volume * 100);
+
+        const concertPitchInput = document.getElementById('concert-pitch');
+        const temperamentSelect = document.getElementById('temperament');
+        const globalDetuneSlider = document.getElementById('global-detune');
+        const openTuningButton = document.getElementById('open-note-tuning');
+        const subdivisionSelect = document.getElementById('metronome-subdivision');
+        const accentSelect = document.getElementById('metronome-accent');
+
+        if (concertPitchInput) {
+            concertPitchInput.value = this.concertPitch.toFixed(1);
+        }
+        if (temperamentSelect) {
+            temperamentSelect.value = this.temperament;
+        }
+        if (globalDetuneSlider) {
+            globalDetuneSlider.value = this.globalDetune;
+        }
+        if (subdivisionSelect) {
+            subdivisionSelect.value = this.metronomeSubdivision;
+        }
+        if (accentSelect) {
+            accentSelect.value = this.metronomeAccentPattern;
+        }
+
+        this.updateGlobalDetuneDisplay();
+        this.populateNoteOffsetInputs();
+
+        ['root', 'third', 'fifth', 'seventh'].forEach(role => {
+            const checkbox = document.getElementById(`mute-${role}`);
+            if (checkbox) {
+                checkbox.checked = this.voiceMuteSettings[role] || false;
+            }
+        });
+
+        if (openTuningButton) {
+            openTuningButton.disabled = false;
+        }
         
         // Initialize repeat markers drag and drop
         // (Removed for simplicity)
+    }
+
+    /**
+     * Update the global detune label to reflect current value
+     */
+    updateGlobalDetuneDisplay() {
+        const display = document.getElementById('global-detune-display');
+        if (!display) return;
+        const value = Math.round(this.globalDetune);
+        const sign = value > 0 ? '+' : '';
+        display.textContent = `${sign}${value}¢`;
+    }
+
+    /**
+     * Populate the note offset inputs with current tuning values
+     */
+    populateNoteOffsetInputs() {
+        document.querySelectorAll('[data-pitch-class]').forEach(input => {
+            const index = parseInt(input.dataset.pitchClass, 10);
+            const value = this.customPitchClassOffsets[index] || 0;
+            input.value = Number.parseFloat(value).toFixed(1);
+        });
+    }
+
+    /**
+     * Open tuning modal for per-note adjustments
+     */
+    openNoteTuningModal() {
+        const modal = document.getElementById('note-tuning-modal');
+        if (!modal) return;
+        this.populateNoteOffsetInputs();
+        modal.style.display = 'block';
+    }
+
+    /**
+     * Close tuning modal and optionally persist changes
+     */
+    closeNoteTuningModal(saveChanges = false) {
+        const modal = document.getElementById('note-tuning-modal');
+        if (!modal) return;
+
+        if (saveChanges) {
+            this.captureNoteOffsetsFromInputs();
+            this.showStatus('Per-note tuning offsets updated');
+        } else {
+            this.populateNoteOffsetInputs();
+        }
+
+        modal.style.display = 'none';
+    }
+
+    /**
+     * Reset per-note offsets to default
+     */
+    resetNoteOffsets() {
+        this.customPitchClassOffsets = new Array(12).fill(0);
+        localStorage.setItem('customPitchOffsets', JSON.stringify(this.customPitchClassOffsets));
+        this.populateNoteOffsetInputs();
+        this.showStatus('Per-note tuning offsets reset');
+    }
+
+    /**
+     * Capture modal input values into tuning state
+     */
+    captureNoteOffsetsFromInputs() {
+        const newOffsets = new Array(12).fill(0);
+        document.querySelectorAll('[data-pitch-class]').forEach(input => {
+            const index = parseInt(input.dataset.pitchClass, 10);
+            const value = parseFloat(input.value);
+            if (Number.isFinite(value)) {
+                const clamped = Math.max(-100, Math.min(100, value));
+                newOffsets[index] = clamped;
+                input.value = clamped.toFixed(1);
+            } else {
+                newOffsets[index] = 0;
+                input.value = '0.0';
+            }
+        });
+        this.customPitchClassOffsets = newOffsets;
+        localStorage.setItem('customPitchOffsets', JSON.stringify(this.customPitchClassOffsets));
+    }
+
+    /**
+     * Update active temperament offsets based on current key and preset
+     */
+    updateTemperamentOffsets() {
+        const baseOffsets = this.getTemperamentBaseOffsets();
+        const rotation = this.getPitchClassIndex(this.key.tonic);
+        const rotated = new Array(12).fill(0);
+        for (let i = 0; i < 12; i++) {
+            rotated[(i + rotation) % 12] = baseOffsets[i];
+        }
+        this.baseTemperamentOffsets = rotated;
+    }
+
+    /**
+     * Retrieve base offsets for selected temperament
+     */
+    getTemperamentBaseOffsets() {
+        switch (this.temperament) {
+            case 'just-major':
+                return [0, 11.73, 3.91, 15.64, -13.69, -1.96, -9.78, 1.96, 13.69, -15.64, 17.6, -11.73];
+            case 'just-minor':
+                return [0, 11.73, 3.91, 15.64, -13.69, -1.96, -17.49, 1.96, 13.69, -15.64, 17.6, -11.73];
+            case 'equal':
+            default:
+                return new Array(12).fill(0);
+        }
+    }
+
+    /**
+     * Convert note name to pitch class index using internal mapping
+     */
+    getPitchClassIndex(noteName) {
+        if (!noteName) return 0;
+        if (this.noteToIndex[noteName] !== undefined) {
+            return this.noteToIndex[noteName];
+        }
+        try {
+            const midi = Tone.Frequency(`${noteName}4`).toMidi();
+            return ((midi % 12) + 12) % 12;
+        } catch (error) {
+            console.warn('Unable to resolve pitch class for', noteName, error);
+            return 0;
+        }
+    }
+
+    /**
+     * Normalize note labels to ASCII accidentals
+     */
+    normalizeNoteLabel(noteName) {
+        if (!noteName || typeof noteName !== 'string') return noteName;
+        return noteName.replace(/♯/g, '#').replace(/♭/g, 'b');
+    }
+
+    /**
+     * Calculate tuned frequency for a given note name
+     */
+    getFrequencyForNote(note) {
+        try {
+            const midi = Tone.Frequency(note).toMidi();
+            const pitchClass = ((midi % 12) + 12) % 12;
+            const semitoneOffset = midi - 69; // distance from A4
+            const baseFrequency = this.concertPitch * Math.pow(2, semitoneOffset / 12);
+            const temperamentOffset = this.baseTemperamentOffsets[pitchClass] || 0;
+            const customOffset = this.customPitchClassOffsets[pitchClass] || 0;
+            const totalOffset = temperamentOffset + customOffset + (this.globalDetune || 0);
+            const tunedFrequency = baseFrequency * Math.pow(2, totalOffset / 1200);
+            return tunedFrequency;
+        } catch (error) {
+            console.warn('Failed to compute frequency for note', note, error);
+            return Tone.Frequency(note).toFrequency();
+        }
+    }
+
+    /**
+     * Get playable notes for a chord (placeholder for voice muting enhancements)
+     */
+    getPlayableNotes(chord) {
+        if (!chord || !Array.isArray(chord.notes)) {
+            return [];
+        }
+        const referenceName = chord.actualChord || chord.name || '';
+        const roles = chord.roles || this.getChordRoles(referenceName, chord.notes);
+        if (!chord.roles) {
+            chord.roles = roles;
+        }
+        return chord.notes.filter((note, index) => {
+            const role = roles[index];
+            if (!role) return true;
+            const key = role.toLowerCase();
+            if (this.voiceMuteSettings[key] === true) {
+                return false;
+            }
+            return true;
+        });
+    }
+
+    /**
+     * Build a chord object with consistent metadata
+     */
+    createChord(name, notes, options = {}) {
+        const chord = {
+            name,
+            notes: Array.isArray(notes) ? notes.slice() : [],
+            duration: options.duration || '1n',
+            ...options
+        };
+        const referenceName = options.actualChord || name;
+        chord.roles = this.getChordRoles(referenceName, chord.notes);
+        return chord;
+    }
+
+    /**
+     * Derive chord roles based on chord name and note count
+     */
+    getChordRoles(chordName, notes) {
+        if (!Array.isArray(notes)) return [];
+        const normalized = (chordName || '').toLowerCase();
+        if (notes.length === 0) return [];
+        if (notes.length === 1) return ['root'];
+        if (notes.length === 2) return ['root', 'fifth'];
+
+        let template = ['root', 'third', 'fifth', 'seventh', 'extension', 'extension'];
+
+        if (normalized.includes('sus2')) {
+            template = ['root', 'second', 'fifth', 'seventh', 'extension', 'extension'];
+        } else if (normalized.includes('sus4')) {
+            template = ['root', 'fourth', 'fifth', 'seventh', 'extension', 'extension'];
+        } else if (normalized.includes('add9')) {
+            template = ['root', 'third', 'fifth', 'seventh', 'ninth', 'extension'];
+        } else if (normalized.includes('6')) {
+            template = ['root', 'third', 'fifth', 'sixth', 'extension', 'extension'];
+        }
+
+        return notes.map((_, idx) => template[idx] || 'extension');
+    }
+
+    /**
+     * Persist voice mute settings to local storage
+     */
+    persistVoiceMuteSettings() {
+        localStorage.setItem('voiceMuteSettings', JSON.stringify(this.voiceMuteSettings));
+    }
+
+    /**
+     * Derive number of subdivisions per beat based on selection
+     */
+    getSubdivisionCount(mode) {
+        switch (mode) {
+            case 'eighth':
+                return 2;
+            case 'triplet':
+                return 3;
+            case 'sixteenth':
+                return 4;
+            case 'quarter':
+            default:
+                return 1;
+        }
+    }
+
+    /**
+     * Determine metronome velocity for current beat/subdivision
+     */
+    getMetronomeVelocity(beatInMeasure, subdivisionIndex, subdivisionCount) {
+        const isPrimary = subdivisionIndex === 0;
+        const pattern = this.metronomeAccentPattern;
+        let velocity = isPrimary ? 0.8 : 0.5;
+
+        if (pattern === 'straight') {
+            velocity = isPrimary ? 0.78 : 0.55;
+        } else if (pattern === 'downbeat') {
+            if (isPrimary) {
+                velocity = beatInMeasure === 0 ? 1 : 0.68;
+            } else {
+                velocity = this.metronomeSubdivision === 'triplet' ? 0.5 : 0.42;
+            }
+        } else if (pattern === 'backbeat') {
+            const accentBeats = this.timeSignature >= 4 ? [1, 3] : [Math.max(1, this.timeSignature - 1)];
+            if (isPrimary) {
+                if (accentBeats.includes(beatInMeasure)) {
+                    velocity = 0.95;
+                } else if (beatInMeasure === 0) {
+                    velocity = 0.82;
+                } else {
+                    velocity = 0.68;
+                }
+            } else {
+                velocity = 0.5;
+            }
+        } else if (pattern === 'clave-3-2') {
+            if (isPrimary) {
+                const clavePattern = [1, 0.8, 0.9, 0.6, 0.95, 0.7, 0.65, 0.55];
+                const index = this.metronomeBeatCount % clavePattern.length;
+                velocity = clavePattern[index];
+            } else {
+                velocity = 0.48;
+            }
+        }
+
+        if (!isPrimary) {
+            velocity = Math.min(velocity, this.metronomeSubdivision === 'triplet' ? 0.55 : 0.5);
+        }
+
+        velocity = Math.max(0.1, Math.min(velocity, 1));
+        return velocity;
+    }
+
+    /**
+     * Trigger a single metronome click
+     */
+    triggerMetronomeClick(time, velocity, isSubdivision) {
+        if (!this.metronome) return;
+        const note = isSubdivision ? 'C7' : (velocity > 0.85 ? 'C5' : 'C6');
+        const duration = isSubdivision ? '32n' : '16n';
+        this.metronome.triggerAttackRelease(note, duration, time, velocity);
+    }
+
+    /**
+     * Load practice drill by identifier
+     */
+    loadPracticeDrill(drillId) {
+        switch (drillId) {
+            case 'major-scale':
+                this.generateScaleDrill('major');
+                break;
+            case 'minor-scale':
+                this.generateScaleDrill('minor');
+                break;
+            case 'tonic-drone':
+                this.generateDroneDrill();
+                break;
+            case 'two-five-one':
+                this.generateTwoFiveOne();
+                break;
+            case 'minor-two-five-one':
+                this.generateMinorTwoFiveOne();
+                break;
+            case 'circle-fifths':
+                this.generateCircleOfFifthsDrill();
+                break;
+            case 'chromatic-ladder':
+                this.generateChromaticLadderDrill();
+                break;
+            case 'call-response':
+                this.generateCallResponseDrill();
+                break;
+            default:
+                this.showStatus('Practice drill not recognized');
+        }
+    }
+
+    /**
+     * Apply generated progression to the UI
+     */
+    applyPracticeProgression(chords, message) {
+        if (!Array.isArray(chords) || chords.length === 0) {
+            this.showStatus('No content generated for this drill');
+            return;
+        }
+        this.chordProgression = chords;
+        this.currentChordIndex = 0;
+        this.targetChordIndex = null;
+        this.metronomeBeatCount = 0;
+        this.displayChords();
+        this.showStatus(message);
+    }
+
+    /**
+     * Generate scale drill for current tonic
+     */
+    generateScaleDrill(targetMode) {
+        const mode = targetMode === 'minor' ? 'minor' : 'major';
+        const scaleSpellings = KEY_NOTE_SPELLINGS[mode] && KEY_NOTE_SPELLINGS[mode][this.key.tonic];
+        if (!scaleSpellings) {
+            this.showStatus('Scale spelling not available for this key');
+            return;
+        }
+
+        const startOctave = 4;
+        let currentOctave = startOctave;
+        let lastIndex = this.noteToIndex[this.normalizeNoteLabel(scaleSpellings[0])] ?? 0;
+        const chords = [];
+
+        scaleSpellings.forEach((noteName, idx) => {
+            const asciiNote = this.normalizeNoteLabel(noteName);
+            const pitchIndex = this.noteToIndex[asciiNote];
+            if (pitchIndex === undefined) return;
+            if (idx > 0 && pitchIndex <= lastIndex) {
+                currentOctave += 1;
+            }
+            const noteWithOctave = `${asciiNote}${currentOctave}`;
+            chords.push(this.createChord(`${noteName}${currentOctave}`, [noteWithOctave], { isSingleNote: true }));
+            lastIndex = pitchIndex;
+        });
+
+        currentOctave += 1;
+        const tonicAscii = this.normalizeNoteLabel(scaleSpellings[0]);
+        const finalNote = `${tonicAscii}${currentOctave}`;
+        chords.push(this.createChord(`${scaleSpellings[0]}${currentOctave}`, [finalNote], { isSingleNote: true }));
+
+        const label = mode === 'major' ? 'Major' : 'Minor';
+        this.applyPracticeProgression(chords, `${label} scale drill in ${this.key.tonic} loaded`);
+    }
+
+    /**
+     * Generate tonic + dominant drone
+     */
+    generateDroneDrill() {
+        const scaleSpellings = KEY_NOTE_SPELLINGS[this.key.mode] && KEY_NOTE_SPELLINGS[this.key.mode][this.key.tonic];
+        if (!scaleSpellings) {
+            this.showStatus('Unable to derive drone notes for this key');
+            return;
+        }
+        const tonicAscii = this.normalizeNoteLabel(scaleSpellings[0]);
+        const dominantAscii = scaleSpellings[4] ? this.normalizeNoteLabel(scaleSpellings[4]) : null;
+        const notes = [`${tonicAscii}3`];
+        if (dominantAscii) {
+            notes.push(`${dominantAscii}3`);
+        }
+        const chord = this.createChord(`${scaleSpellings[0]} Drone`, notes, { isDrone: true });
+        this.applyPracticeProgression([chord], `Sustained drone on ${scaleSpellings[0]} ready`);
+    }
+
+    /**
+     * Generate ii-V-I cadence based on current mode
+     */
+    generateTwoFiveOne() {
+        if (this.key.mode === 'minor') {
+            this.generateMinorTwoFiveOne();
+            return;
+        }
+        const progression = ['ii7', 'V7', 'Imaj7'];
+        this.generateRomanProgression(progression, 'ii–V–I cadence ready');
+    }
+
+    /**
+     * Generate minor iiø7-V7-i cadence
+     */
+    generateMinorTwoFiveOne() {
+        const progression = ['iim7b5', 'V7', 'i'];
+        this.generateRomanProgression(progression, 'Minor iiø–V–i cadence ready');
+    }
+
+    /**
+     * Helper to load Roman numeral progression
+     */
+    generateRomanProgression(symbols, message) {
+        const chords = symbols
+            .map(symbol => this.parseRomanNumeralChord(symbol))
+            .filter(chord => chord);
+        if (chords.length === 0) {
+            this.showStatus('Unable to build progression from Roman numerals');
+            return;
+        }
+        chords.forEach(chord => {
+            chord.duration = '1n';
+            chord.roles = this.getChordRoles(chord.actualChord || chord.name, chord.notes);
+        });
+        this.applyPracticeProgression(chords, message);
+    }
+
+    /**
+     * Circle-of-fifths practice loop
+     */
+    generateCircleOfFifthsDrill() {
+        if (this.key.mode === 'minor') {
+            const minorCycle = ['i', 'iv', 'VII', 'III', 'VI', 'ii°', 'V', 'i'];
+            this.generateRomanProgression(minorCycle, 'Minor circle of fifths progression loaded');
+        } else {
+            const majorCycle = ['I', 'IV', 'vii°', 'iii', 'vi', 'ii', 'V', 'I'];
+            this.generateRomanProgression(majorCycle, 'Circle of fifths progression loaded');
+        }
+    }
+
+    /**
+     * Chromatic ladder for pitch memory
+     */
+    generateChromaticLadderDrill() {
+        const tonicAscii = this.normalizeNoteLabel(this.key.tonic);
+        const startIndex = this.noteToIndex[tonicAscii];
+        if (startIndex === undefined) {
+            this.showStatus('Unable to determine tonic pitch for chromatic drill');
+            return;
+        }
+        const baseOctave = 4;
+        const chords = [];
+        for (let step = 0; step < 12; step++) {
+            const totalSemitone = startIndex + step;
+            const pitchClass = ((totalSemitone % 12) + 12) % 12;
+            const octaveOffset = Math.floor((startIndex + step) / 12) - Math.floor(startIndex / 12);
+            const octave = baseOctave + octaveOffset;
+            const noteName = this.indexToNote[pitchClass];
+            const asciiNote = this.normalizeNoteLabel(noteName);
+            const display = `${noteName}${octave}`;
+            const actual = `${asciiNote}${octave}`;
+            chords.push(this.createChord(display, [actual], { isSingleNote: true }));
+        }
+        this.applyPracticeProgression(chords, 'Chromatic ladder drill loaded');
+    }
+
+    /**
+     * Alternating tonic/dominant call-and-response
+     */
+    generateCallResponseDrill() {
+        const progression = this.key.mode === 'minor'
+            ? ['i', 'V7', 'i', 'V7', 'i', 'V7', 'i', 'V7']
+            : ['I', 'V7', 'I', 'V7', 'I', 'V7', 'I', 'V7'];
+        this.generateRomanProgression(progression, 'Call & response cadence queued');
     }
 
     /**
@@ -936,11 +1619,7 @@ class MusicalAccompanist {
             return null;
         }
 
-        return {
-            name: chordName,
-            notes: notes,
-            duration: '1n'
-        };
+        return this.createChord(chordName, notes);
     }
 
     /**
@@ -1386,6 +2065,7 @@ class MusicalAccompanist {
             this.isPlaying = true;
             this.isPaused = false;
             this.currentChordIndex = 0;
+            this.metronomeBeatCount = 0;
             
             // Update UI
             document.getElementById('play-btn').disabled = true;
@@ -1438,16 +2118,18 @@ class MusicalAccompanist {
             
             // Schedule metronome if enabled
             if (this.metronomeEnabled) {
-                this.playMetronome();
+                this.playMetronome(time);
             }
             
             // Move to next chord
             this.currentChordIndex++;
+            this.metronomeBeatCount++;
             
             // Handle end of progression
             if (this.currentChordIndex >= this.chordProgression.length) {
                 if (this.loopMode) {
                     this.currentChordIndex = 0;
+                    this.metronomeBeatCount = 0;
                 } else {
                     this.stopPlayback();
                 }
@@ -1485,14 +2167,8 @@ class MusicalAccompanist {
             return [];
         }
         
-        const frequencies = [];
-        
-        chord.notes.forEach(note => {
-            let frequency = Tone.Frequency(note).toFrequency();
-            frequencies.push(frequency);
-        });
-        
-        return frequencies;
+        const notes = this.getPlayableNotes(chord);
+        return notes.map(note => this.getFrequencyForNote(note));
     }
 
     /**
@@ -1526,13 +2202,22 @@ class MusicalAccompanist {
     }
 
     /**
-     * Play metronome click
+     * Play metronome click sequence with subdivision support
      */
-    playMetronome() {
-        const isAccented = (this.currentChordIndex % this.timeSignature === 0);
-        const note = isAccented ? 'C5' : 'C6';
-        
-        this.metronome.triggerAttackRelease(note, '16n');
+    playMetronome(startTime) {
+        if (!this.metronome) return;
+
+        const subdivisionCount = this.getSubdivisionCount(this.metronomeSubdivision);
+        const beatDuration = 60 / this.tempo;
+        const subdivisionDuration = beatDuration / subdivisionCount;
+        const beatInMeasure = this.metronomeBeatCount % this.timeSignature;
+
+        for (let subdivisionIndex = 0; subdivisionIndex < subdivisionCount; subdivisionIndex++) {
+            const clickTime = startTime + (subdivisionDuration * subdivisionIndex);
+            const velocity = this.getMetronomeVelocity(beatInMeasure, subdivisionIndex, subdivisionCount);
+            const isSubdivision = subdivisionIndex !== 0;
+            this.triggerMetronomeClick(clickTime, velocity, isSubdivision);
+        }
     }
 
     /**
@@ -1542,6 +2227,7 @@ class MusicalAccompanist {
         this.isPlaying = false;
         this.isPaused = false;
         this.currentChordIndex = 0;
+        this.metronomeBeatCount = 0;
         
         // Stop transport and release all notes
         Tone.Transport.stop();
@@ -3010,12 +3696,7 @@ class MusicalAccompanist {
             noteName += '4';
         }
         
-        return {
-            name: noteName,
-            notes: [noteName],
-            duration: '1n',
-            isSingleNote: true
-        };
+        return this.createChord(noteName, [noteName], { isSingleNote: true });
     }
 
     /**
@@ -3039,12 +3720,7 @@ class MusicalAccompanist {
             return note;
         });
         
-        return {
-            name: chordName,
-            notes: notes,
-            duration: '1n',
-            isCustom: true
-        };
+        return this.createChord(chordName, notes, { isCustom: true });
     }
 
     /**

@@ -110,6 +110,70 @@
                             <option value="minor">Minor</option>
                         </select>
                     </div>
+                    <div class="control-group">
+                        <label for="metronome-subdivision">Metronome Subdivision:</label>
+                        <select id="metronome-subdivision">
+                            <option value="quarter" selected>Quarter Notes</option>
+                            <option value="eighth">Eighth Notes</option>
+                            <option value="triplet">Triplets</option>
+                            <option value="sixteenth">Sixteenth Notes</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="metronome-accent">Accent Pattern:</label>
+                        <select id="metronome-accent">
+                            <option value="downbeat" selected>Downbeat Accent</option>
+                            <option value="straight">Even Clicks</option>
+                            <option value="backbeat">Backbeat (2 &amp; 4)</option>
+                            <option value="clave-3-2">Clave 3-2</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="controls-row tuning-controls">
+                    <div class="control-group">
+                        <label for="concert-pitch">Concert Pitch (Hz):</label>
+                        <input type="number" id="concert-pitch" min="400" max="460" step="0.1" value="440">
+                    </div>
+                    <div class="control-group">
+                        <label for="temperament">Temperament:</label>
+                        <select id="temperament">
+                            <option value="equal" selected>Equal Temperament</option>
+                            <option value="just-major">Just Intonation (Major)</option>
+                            <option value="just-minor">Just Intonation (Minor)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="global-detune">Global Detune: <span id="global-detune-display">0¢</span></label>
+                        <input type="range" id="global-detune" min="-50" max="50" step="1" value="0">
+                    </div>
+                    <div class="control-group">
+                        <button id="open-note-tuning" class="outline-btn">Per-Note Offsets</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Practice Drills -->
+            <section class="practice-drills">
+                <h2>🎯 Practice Drills</h2>
+                <div class="drill-groups">
+                    <div class="drill-group">
+                        <h3>Scales &amp; Intonation</h3>
+                        <button class="drill-btn" data-drill="major-scale">Major Scale (Current Key)</button>
+                        <button class="drill-btn" data-drill="minor-scale">Minor Scale (Current Key)</button>
+                        <button class="drill-btn" data-drill="tonic-drone">Tonic + Dominant Drone</button>
+                    </div>
+                    <div class="drill-group">
+                        <h3>Cadences &amp; Progressions</h3>
+                        <button class="drill-btn" data-drill="two-five-one">ii–V–I Cadence</button>
+                        <button class="drill-btn" data-drill="minor-two-five-one">Minor iiø–V–i Cadence</button>
+                        <button class="drill-btn" data-drill="circle-fifths">Circle of Fifths Loop</button>
+                    </div>
+                    <div class="drill-group">
+                        <h3>Pitch Memory</h3>
+                        <button class="drill-btn" data-drill="chromatic-ladder">Chromatic Memory Ladder</button>
+                        <button class="drill-btn" data-drill="call-response">Call &amp; Response (I ↔ V)</button>
+                    </div>
                 </div>
             </section>
 
@@ -304,6 +368,13 @@
                             <button id="import-progression" class="action-btn" title="Import progression">📁</button>
                             <button id="clear-progression" class="clear-progression-btn">🗑️ Clear</button>
                         </div>
+                        <div class="voice-mute-controls">
+                            <span>Voice Isolation:</span>
+                            <label><input type="checkbox" id="mute-root"> Root</label>
+                            <label><input type="checkbox" id="mute-third"> Third</label>
+                            <label><input type="checkbox" id="mute-fifth"> Fifth</label>
+                            <label><input type="checkbox" id="mute-seventh"> Seventh</label>
+                        </div>
                     </div>
                 </div>
                 
@@ -359,6 +430,68 @@
     </div>
 
     <input type="file" id="import-file-input" style="display: none;" accept=".json,.txt">
+
+    <div id="note-tuning-modal" class="modal" style="display: none;">
+        <div class="modal-content tuning-modal">
+            <span class="close" id="close-note-tuning">&times;</span>
+            <h3>Per-Note Tuning Offsets</h3>
+            <p class="modal-subtitle">Adjust each pitch class (in cents) relative to the selected temperament.</p>
+            <div class="note-offset-grid">
+                <div class="note-offset">
+                    <label for="offset-C">C</label>
+                    <input type="number" id="offset-C" data-pitch-class="0" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-C-sharp">C♯/D♭</label>
+                    <input type="number" id="offset-C-sharp" data-pitch-class="1" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-D">D</label>
+                    <input type="number" id="offset-D" data-pitch-class="2" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-D-sharp">D♯/E♭</label>
+                    <input type="number" id="offset-D-sharp" data-pitch-class="3" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-E">E</label>
+                    <input type="number" id="offset-E" data-pitch-class="4" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-F">F</label>
+                    <input type="number" id="offset-F" data-pitch-class="5" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-F-sharp">F♯/G♭</label>
+                    <input type="number" id="offset-F-sharp" data-pitch-class="6" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-G">G</label>
+                    <input type="number" id="offset-G" data-pitch-class="7" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-G-sharp">G♯/A♭</label>
+                    <input type="number" id="offset-G-sharp" data-pitch-class="8" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-A">A</label>
+                    <input type="number" id="offset-A" data-pitch-class="9" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-A-sharp">A♯/B♭</label>
+                    <input type="number" id="offset-A-sharp" data-pitch-class="10" step="0.1" min="-100" max="100" value="0">
+                </div>
+                <div class="note-offset">
+                    <label for="offset-B">B</label>
+                    <input type="number" id="offset-B" data-pitch-class="11" step="0.1" min="-100" max="100" value="0">
+                </div>
+            </div>
+            <div class="modal-actions tuning-actions">
+                <button id="reset-note-offsets" class="btn-secondary">Reset Offsets</button>
+                <button id="save-note-offsets" class="btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { inject } from '@vercel/analytics';

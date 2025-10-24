@@ -14,6 +14,13 @@ A web-based musical accompanist tool for practice and learning, featuring custom
 - **Time Signatures**: Support for 2/4, 3/4, 4/4, 6/8, and 8/8 time
 - **Drag and Drop**: Rearrange chords by dragging them to new positions
 
+### 🎯 **Practice & Intonation**
+- **Practice Drills**: Load key-aware scale runs, circle-of-fifths loops, chromatic ladders, drones, and call-and-response exercises with one click
+- **Advanced Metronome**: Choose quarter, eighth, triplet, or sixteenth subdivisions with downbeat, backbeat, or clave accent patterns
+- **Tuning Suite**: Set concert pitch, switch between equal/just temperaments, and fine-tune individual pitch classes in cents
+- **Global Detune**: Apply quick pitch shifts (±50 cents) to line up with ensembles or recordings
+- **Voice Isolation**: Mute root, third, fifth, or seventh voices to spotlight specific chord members during playback
+
 ### ️ **Input Methods**
 - **Text Input**: Enter chord progressions using simple text notation
 - **Preset Library**: Quick access to common progressions and drones
@@ -172,8 +179,13 @@ The built-in piano keyboard allows you to:
 - **Visual Indicators**: See chord functions, note names, and edit status
 - **Empty Slot Insertion**: Add placeholder chords for easier progression building
 
-### Just Intonation
-When enabled, Just Intonation mode adjusts chord intervals to use pure harmonic ratios:
+### Intonation Controls
+- **Concert Pitch**: Re-center playback around any A4 reference from 400–460 Hz
+- **Temperament Presets**: Switch between equal temperament, just-major, or just-minor mappings
+- **Per-Note Offsets**: Apply custom cent adjustments to each pitch class and store them for later sessions
+- **Global Detune**: Sweep the entire instrument up or down for easy ensemble matching
+
+When Just Intonation is selected, chord intervals adjust to pure harmonic ratios:
 - **Major Third**: 5:4 ratio (14 cents flatter than equal temperament)
 - **Perfect Fifth**: 3:2 ratio (2 cents sharper than equal temperament)
 - **Minor Third**: 6:5 ratio (slightly different from equal temperament)
